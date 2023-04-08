@@ -24,7 +24,7 @@ import traceback
 import datetime
 import ctypes
 
-myappid = 'tahiralauddin.regenixx.1.0.0' # arbitrary string
+myappid = 'tahiralauddin.regenixx.1.0.1' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 

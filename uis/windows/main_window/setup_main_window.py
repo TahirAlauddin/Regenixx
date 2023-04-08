@@ -643,6 +643,25 @@ class SetupMainWindow:
         # ADD WIDGETS
         SetupMainWindow.addWidgetToWindow(self)
 
+        
+
+        # RIGHT COLUMN
+        self.changeExcelFileButton = PyPushButton(
+            text="Change Excel File",
+            radius=8,
+            color='#FFF',
+            bg_color=self.themes["app_color"]["dark_one"],
+            bg_color_hover=self.themes["app_color"]["dark_three"],
+            bg_color_pressed=self.themes["app_color"]["dark_four"]
+        )
+        
+        self.changeExcelFileButton.setMinimumSize(QSize(150,50))
+        self.changeExcelFileButton.setMaximumWidth(200)
+        self.changeExcelFileButton.clicked.connect(lambda x: MainFunctions.changeExcelFile(self))
+        
+        self.ui.right_column.verticalLayout.addWidget(self.changeExcelFileButton, 1, Qt.AlignBottom)
+
+
     
     def removeCustomWidgetFromWindow(self):
         self.ui.load_pages.row_1_layout.removeWidget(self.mainTable)
@@ -778,23 +797,6 @@ class SetupMainWindow:
 
         self.ui.load_pages.tableWidget.setColumnCount(2)
         self.ui.load_pages.saveDiagnosisBtn.clicked.connect(saveDiagnosis)
-
-
-        # RIGHT COLUMN
-        self.changeExcelFileButton = PyPushButton(
-            text="Change Excel File",
-            radius=8,
-            color='#FFF',
-            bg_color=self.themes["app_color"]["dark_one"],
-            bg_color_hover=self.themes["app_color"]["dark_three"],
-            bg_color_pressed=self.themes["app_color"]["dark_four"]
-        )
-        
-        self.changeExcelFileButton.setMinimumSize(QSize(150,50))
-        self.changeExcelFileButton.setMaximumWidth(200)
-        self.changeExcelFileButton.clicked.connect(lambda x: MainFunctions.changeExcelFile(self))
-        
-        self.ui.right_column.verticalLayout.addWidget(self.changeExcelFileButton, 1, Qt.AlignBottom)
 
         # ///////////////////////////////////////////////////////////////
         # END - EXAMPLE CUSTOM WIDGETS

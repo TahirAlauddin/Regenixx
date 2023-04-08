@@ -14,6 +14,7 @@ dist
 Regenixx-cache
 Regenixx-SetupFiles
 Regenixx.aip
+*.back.aip
 
 # Virtual Environments
 venv
