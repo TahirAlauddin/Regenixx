@@ -1,0 +1,44 @@
+# Caching
+__pycache__/
+.pyc
+
+# IDE
+.vscode/
+
+# Pyinstaller Folders
+build
+dist
+*.spec
+
+# Advanced Installer Folders
+Regenixx-cache
+Regenixx-SetupFiles
+Regenixx.aip
+
+# Virtual Environments
+venv
+
+
+# Log Files
+*.log
+
+# Other Files
+foo.py
+bar.py
+Financial Samples.docx
+
+# Database 
+db.sqlite3
+
+# Images
+CCRM Colors.png
+Color Details.jpg
+images
+pdf-images/
+
+# PDFs
+PDFs/*
+
+# Zip Files
+Source Code.zip
+*.zip

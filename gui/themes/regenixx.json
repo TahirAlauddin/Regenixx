@@ -1,0 +1,31 @@
+{
+    "theme_name" : "Regenixx",
+    "app_color" : {
+        "dark_one" : "#132640",
+        "dark_two" : "#132640",
+        "dark_three" : "#21252d",
+        "dark_four" : "#272c36",
+
+        "bg_one": "#404b6c",
+        "bg_two": "#36405b",
+        "bg_three" : "#132640",
+
+        "icon_color" : "#c3ccdf",
+        "icon_hover" : "#dce1ec",
+        "icon_pressed" : "#6c99f4",
+        "icon_active" : "#f5f6f9",
+        "context_color": "#c1b55e",
+        "context_hover" : "#6c99f4",
+        "context_pressed" : "#dbd19e",
+        "text_title" : "#dce1ec",
+        "text_foreground" : "white",
+        "text_description" : "#4f5b6e",
+        "text_active" : "#dce1ec",
+        "white" : "#f5f6f9",
+        "pink" : "#ff007f",
+        "green" : "#00ff7f",
+        "red" : "#ff5555",
+        "yellow" : "#f1fa8c"
+        
+    }
+}
