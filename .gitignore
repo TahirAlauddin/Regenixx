@@ -43,3 +43,7 @@ PDFs/*
 # Zip Files
 Source Code.zip
 *.zip
+
+
+# Environment Variables
+.env

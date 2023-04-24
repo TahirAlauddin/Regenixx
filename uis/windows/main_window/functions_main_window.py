@@ -188,7 +188,6 @@ class MainFunctions():
 
         if not all([mainWindow.image_plan1, mainWindow.image_plan2, mainWindow.image_plan3]):
             # User must provide all images
-            # print("Please provide all images")
             QMessageBox.critical(mainWindow, "Error occured!", "Please provide images!")
             mainWindow.removeProgressBar.emit()
             return
@@ -240,11 +239,179 @@ class MainFunctions():
                 os.remove(image_plan1)
                 os.remove(image_plan2)
                 os.remove(image_plan3)
+
+                # Add Patient into database
+                MainFunctions.add_patient_to_database(patients_name, patients_date_of_birth,
+                            diagnosis, services_plan1, services_plan2, services_plan3,
+                            discountPlan1, discountPlan2, discountPlan3)
+                
+                mainWindow.patientAddedToDatabaseSignal.emit()
+
+                
+
             except:
                 pass
             
         thread = Thread(target=populateDataIntoPDF)
         thread.start()
+
+
+    def add_patient_to_database(patient_name, date_of_birth, diagnosis,
+                                services_plan1, services_plan2, services_plan3,
+                                discountPlan1, discountPlan2, discountPlan3):
+        try:
+            from datetime import datetime
+
+            # get current date and time
+            current_date = datetime.now()
+
+            # format current date as string in YYYY-MM-DD format
+            date_added = current_date.strftime('%Y-%m-%d')
+
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+            
+            # Start transaction
+            cursor.execute('BEGIN')
+
+            services_plan1_id = MainFunctions.add_service_plan(cursor, services_plan1, discountPlan1)
+            services_plan2_id = MainFunctions.add_service_plan(cursor, services_plan2, discountPlan2)
+            services_plan3_id = MainFunctions.add_service_plan(cursor, services_plan3, discountPlan3)
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS patientsTable (id INTEGER PRIMARY KEY, patients_name VARCHAR, \
+                        patients_date_of_birth DATE, date_added DATE, diagnosis VARCHAR, \
+                        services_plan1_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan2_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan3_id INTEGER REFERENCES ServicesPlan(id))")
+            if diagnosis:
+                cursor.execute("INSERT INTO patientsTable (patients_name, patients_date_of_birth, date_added,\
+                                diagnosis, services_plan1_id, services_plan2_id, services_plan3_id) \
+                                VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                (patient_name, date_of_birth, date_added, diagnosis, services_plan1_id, services_plan2_id, services_plan3_id))
+
+                
+            # cursor.execute('COMMIT')
+
+            # End transaction
+            connection.commit()
+
+        except Exception as e:
+            # Rollback transaction in case of errors
+            cursor.execute("ROLLBACK")
+            print(e)
+            return False
+        finally:
+            connection.close()
+        return True
+    
+    def add_service_plan(cursor, services, discount):
+
+        
+        cursor.execute("CREATE TABLE IF NOT EXISTS ServicesPlan (id INTEGER PRIMARY KEY, discount INTEGER)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS Services (id INTEGER PRIMARY KEY, service_plan_id INTEGER REFERENCES ServicesPlan(id), service VARCHAR, price INTEGER)")
+
+        # Insert service plan into ServicesPlan table
+        cursor.execute('INSERT INTO ServicesPlan (discount) VALUES (?)', (discount,)) 
+        service_plan_id = cursor.lastrowid
+
+        # Insert each service into Services table
+        for service, price in services:
+            cursor.execute('INSERT INTO Services (service_plan_id, service, price) VALUES (?, ?, ?)',
+                            (service_plan_id, service, price))
+
+        return service_plan_id
+    
+
+    def get_services():
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            # Fetch all service plans with their associated services
+            cursor.execute('SELECT ServicesPlan.id, Services.service, Services.price, ServicesPlan.discount \
+                            FROM ServicesPlan JOIN Services ON Services.service_plan_id = ServicesPlan.id')
+            service_data = cursor.fetchall()
+
+            # Transform data into a dictionary where each service plan is a key and its value is a list of associated services
+            services = {}
+            for row in service_data:
+                service_plan_id, service, price, discount = row
+                if service_plan_id not in services:
+                    services[service_plan_id] = {'discount': discount, 'services': []}
+                services[service_plan_id]['services'].append({'service': service, 'price': price})
+
+            return services
+
+        except Exception as e:
+            print(e)
+            return None
+        finally:
+            connection.close()
+
+
+    def get_patients():
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            # Fetch all patients with their associated service plans
+            cursor.execute('SELECT patientsTable.id, patientsTable.patients_name, patientsTable.patients_date_of_birth, \
+                            patientsTable.date_added, patientsTable.diagnosis, \
+                            ServicesPlan1.id, ServicesPlan1.discount, \
+                            ServicesPlan2.id, ServicesPlan2.discount, \
+                            ServicesPlan3.id, ServicesPlan3.discount \
+                            FROM patientsTable \
+                            JOIN ServicesPlan AS ServicesPlan1 ON patientsTable.services_plan1_id = ServicesPlan1.id \
+                            JOIN ServicesPlan AS ServicesPlan2 ON patientsTable.services_plan2_id = ServicesPlan2.id \
+                            JOIN ServicesPlan AS ServicesPlan3 ON patientsTable.services_plan3_id = ServicesPlan3.id')
+            patient_data = cursor.fetchall()
+
+            # Transform data into a list of dictionaries where each dictionary represents a patient
+            patients = []
+            for row in patient_data:
+                patient_id, patient_name, date_of_birth, date_added, diagnosis, \
+                service_plan1_id, discount1, service_plan2_id, discount2, service_plan3_id, discount3 = row
+
+                patient = {'id': patient_id,
+                        'name': patient_name,
+                        'date_of_birth': date_of_birth,
+                        'date_added': date_added,
+                        'diagnosis': diagnosis,
+                        'service_plans': [
+                            {'services': MainFunctions.get_services_by_service_plan_id(service_plan1_id), 'discount': discount1},
+                            {'services': MainFunctions.get_services_by_service_plan_id(service_plan2_id), 'discount': discount2},
+                            {'services': MainFunctions.get_services_by_service_plan_id(service_plan3_id), 'discount': discount3}
+                        ]
+                        }
+
+                patients.append(patient)
+
+            return patients
+
+        except Exception as e:
+            print(e)
+            return None
+        finally:
+            connection.close()
+
+
+    def get_services_by_service_plan_id(service_plan_id):
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            # Select all services for the given service plan ID
+            cursor.execute('SELECT service, price FROM Services WHERE service_plan_id = ?', (service_plan_id,))
+            services = cursor.fetchall()
+
+            return services
+
+        except Exception as e:
+            print(e)
+            return None
+        finally:
+            connection.close()
+
 
 
     def get_users_desktop_folder():

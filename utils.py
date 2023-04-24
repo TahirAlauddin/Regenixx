@@ -225,18 +225,71 @@ QHeaderView::section:vertical
 """
 
 
-progressBarStyles = """QProgressBar {{\n"
-	font: 10pt \"Roboto\";\n
-	background-color: {bg_color};\n
-	color: rgb(200, 200, 200);\n
-	border-style: none;\n
-	border-radius: 10px;\n
-	text-align: center;\n
+progressBarStyles = """QProgressBar {{
+	font: 10pt \"Roboto\";
+	background-color: {bg_color};
+	color: {color};
+	border-style: none;
+	border-radius: {radius}px;
+	text-align: center;
 }}
 QProgressBar::chunk{{
-	border-radius: 10px;\n
+	border-radius: {radius}px;
 	background-color: qlineargradient(spread:pad, x1:0, y1:0.511364, x2:1, y2:0.523, stop:0 {gradient_color_start}, stop:1 {gradient_color_stop});
 }}"""
+
+
+
+
+frameStyle = """
+QFrame {{ 
+    background-color: {bg_color};
+    border-radius: {border_radius};
+    border: {border_size}px solid {border_color};
+    color: {text_color};
+    font: {text_font};
+}}
+"""
+
+
+widgetStyle = """
+QWidget {{ 
+    background-color: {bg_color};
+    border-radius: {border_radius};
+    border: {border_size}px solid {border_color};
+    color: {text_color};
+    font: {text_font};
+}}
+"""
+
+messageBoxStyle = """
+QMessageBox {
+    background-color: #F2F2F2;
+}
+QMessageBox QLabel {
+    color: #333;
+    font-size: 14px;
+}
+QMessageBox QPushButton {
+    background-color: #00A8F3;
+    border-radius: 5px;
+    color: #FFF;
+    padding: 5px 10px;
+}
+QMessageBox QPushButton:hover {
+    background-color: #0091D1;
+}
+"""
+
+labelStyle = """ 
+QLabel {{		
+    background-color: {bg_color};	
+    color: {color};
+    padding-left: 10px;
+    padding-right: 10px;
+    font: 800 19pt "Segoe UI";
+}}
+"""
 
 # SET STYLESHEET
 def set_stylesheet(self, style='', **kwargs):

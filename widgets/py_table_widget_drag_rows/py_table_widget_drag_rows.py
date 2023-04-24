@@ -86,14 +86,6 @@ class TableWidgetDragRows(PyTableWidget):
                 self.setColumnCount(2) #! Hardcoding column count
 
                 sender = event.source()
-                # labels = [sender.horizontalHeaderItem(column).text() 
-                #         for column in range(sender.columnCount())]
-                
-                # for i in range(len(labels)):
-                #     label = labels[i]
-                #     if label == 'Patient Cost':
-                #         labels[i] = 'Cost'
-
                 self.setHorizontalHeaderLabels(['Title', 'Cost'])
 
                 for row_idx, row in enumerate(rows):
@@ -101,7 +93,6 @@ class TableWidgetDragRows(PyTableWidget):
                     row = row[1:3]
                     for column_idx, column in enumerate(row):
                         item = QTableWidgetItem(column)
-                        #TODO: change this row_idx
                         self.setItem(row_idx+old_row_count, column_idx, item)
             event.accept()
         else:

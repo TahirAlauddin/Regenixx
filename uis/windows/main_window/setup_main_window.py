@@ -73,10 +73,18 @@ class SetupMainWindow:
             "is_active" : True
         },
         {
-            "btn_icon" : "icon_widgets.svg",
+            "btn_icon" : "icon-diagnosis.svg",
             "btn_id" : "btn_diagnoses",
             "btn_text" : "Diagnoses",
             "btn_tooltip" : "Diagnoses",
+            "show_top" : True,
+            "is_active" : False
+        },
+        {
+            "btn_icon" : "icon-patient.svg",
+            "btn_id" : "btn_patients",
+            "btn_text" : "Patients",
+            "btn_tooltip" : "Patients",
             "show_top" : True,
             "is_active" : False
         },
@@ -627,6 +635,7 @@ class SetupMainWindow:
             self.mainTable.setItem(idx, 1, QTableWidgetItem(service[1]))
             self.mainTable.setItem(idx, 2, QTableWidgetItem(service[2]))
 
+
         # Create PDF Button
         self.createPDFBtn = PyPushButton(
             text="Download Plan",
@@ -660,6 +669,14 @@ class SetupMainWindow:
         self.changeExcelFileButton.clicked.connect(lambda x: MainFunctions.changeExcelFile(self))
         
         self.ui.right_column.verticalLayout.addWidget(self.changeExcelFileButton, 1, Qt.AlignBottom)
+
+
+
+        from setup_patients_ui import setup_patients
+        setup_patients(self)
+
+        #//////////////////////////////////////////////////////////////////////////////////
+        # UI SETUP END
 
 
     

@@ -17,14 +17,19 @@
 # IMPORT PACKAGES AND MODULES
 # ///////////////////////////////////////////////////////////////
 from uis.windows.main_window.functions_main_window import *
+from s3_bucket_url import get_url, get_latest_version
+from utils import messageBoxStyle
+from subprocess import Popen
 import sys
 import os
 import logging
 import traceback
 import datetime
 import ctypes
+import json
+import time
 
-myappid = 'tahiralauddin.regenixx.1.0.1' # arbitrary string
+myappid = 'tahiralauddin.regenixx.1.0.2' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
@@ -58,6 +63,8 @@ class MainWindow(QMainWindow):
     pdfCreateSignal = Signal()
     pdfCreateShowProgressSignal = Signal(str)
     removeProgressBar = Signal()
+    patientAddedToDatabaseSignal = Signal()
+    downloadUpdatesSignal = Signal()
 
     def __init__(self):
         super().__init__()
@@ -68,6 +75,15 @@ class MainWindow(QMainWindow):
         self.pdfCreateSignal.connect(self.showPDFCreatingProgressBar)
         self.pdfCreateShowProgressSignal.connect(self.updateProgressBar)
         self.removeProgressBar.connect(self.hideProgressBar)
+        self.patientAddedToDatabaseSignal.connect(self.refreshPatientsPage)
+        self.downloadUpdatesSignal.connect(self.handleDownloadUpdatesSignal)
+        
+
+        from threading import Thread
+
+        thread = Thread(target=self.checkForUpdates)
+        # thread.daemon = True
+        thread.start()
 
         # SETUP MAIN WINDOW
         # Load widgets from "gui\uis\main_window\ui_main.py"
@@ -116,7 +132,7 @@ class MainWindow(QMainWindow):
             # Load Page 1
             MainFunctions.set_page(self, self.ui.load_pages.page_1)
 
-        # WIDGETS BTN
+        # DIAGNOSIS BTN
         if btn.objectName() == "btn_diagnoses":
             # Select Menu
             self.ui.left_menu.select_only_one(btn.objectName())
@@ -125,62 +141,14 @@ class MainWindow(QMainWindow):
             MainFunctions.set_page(self, self.ui.load_pages.page_2)
 
         # LOAD USER PAGE
-        if btn.objectName() == "btn_add_user":
+        if btn.objectName() == "btn_patients":
             # Select Menu
             self.ui.left_menu.select_only_one(btn.objectName())
 
             # Load Page 3 
-            pass
+            MainFunctions.set_page(self, self.ui.load_pages.page_3)
+    
 
-        # BOTTOM INFORMATION
-        if btn.objectName() == "btn_info":
-            # CHECK IF LEFT COLUMN IS VISIBLE
-            if not MainFunctions.left_column_is_visible(self):
-                self.ui.left_menu.select_only_one_tab(btn.objectName())
-
-                # Show / Hide
-                MainFunctions.toggle_left_column(self)
-                self.ui.left_menu.select_only_one_tab(btn.objectName())
-            else:
-                if btn.objectName() == "btn_close_left_column":
-                    self.ui.left_menu.deselect_all_tab()
-                    # Show / Hide
-                    MainFunctions.toggle_left_column(self)
-                
-                self.ui.left_menu.select_only_one_tab(btn.objectName())
-
-            # Change Left Column Menu
-            if btn.objectName() != "btn_close_left_column":
-                MainFunctions.set_left_column_menu(
-                    self, 
-                    menu = self.ui.left_column.menus.menu_2,
-                    title = "Info tab",
-                    icon_path = Functions.set_svg_icon("icon_info.svg")
-                )
-
-        # SETTINGS LEFT
-        if btn.objectName() == "btn_settings" or btn.objectName() == "btn_close_left_column":
-            # CHECK IF LEFT COLUMN IS VISIBLE
-            if not MainFunctions.left_column_is_visible(self):
-                # Show / Hide
-                MainFunctions.toggle_left_column(self)
-                self.ui.left_menu.select_only_one_tab(btn.objectName())
-            else:
-                if btn.objectName() == "btn_close_left_column":
-                    self.ui.left_menu.deselect_all_tab()
-                    # Show / Hide
-                    MainFunctions.toggle_left_column(self)
-                self.ui.left_menu.select_only_one_tab(btn.objectName())
-
-            # Change Left Column Menu
-            if btn.objectName() != "btn_close_left_column":
-                MainFunctions.set_left_column_menu(
-                    self, 
-                    menu = self.ui.left_column.menus.menu_1,
-                    title = "Settings Left Column",
-                    icon_path = Functions.set_svg_icon("icon_settings.svg")
-                )
-        
         # TITLE BAR MENU
         # ///////////////////////////////////////////////////////////////
         
@@ -238,6 +206,159 @@ class MainWindow(QMainWindow):
     def hideProgressBar(self):
         self.splashScreen.close()
 
+    def refreshPatientsPage(self):
+        from setup_patients_ui import setup_patients
+        setup_patients(self)
+
+    def remove_all_widgets(self, layout):
+        while layout.count():
+            child = layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+            elif child.layout():
+                self.remove_all_widgets(child.layout())
+
+    def showPatientsDetail(self, patient):
+        # Remove previous labels 
+
+        self.remove_all_widgets(self.ui.load_pages.plan1ServicesVerticalLayout)
+        self.remove_all_widgets(self.ui.load_pages.plan2ServicesVerticalLayout)
+        self.remove_all_widgets(self.ui.load_pages.plan3ServicesVerticalLayout)
+        
+
+        self.ui.load_pages.pages.setCurrentIndex(3)
+        self.ui.load_pages.patientNameLabel.setText(patient['name'])
+        self.ui.load_pages.patientDateOfBirth.setText(patient['date_of_birth'])
+        
+        self.ui.load_pages.patientDateAddedLabel.setText(patient['date_added'])
+        icon = QIcon()
+        icon.addFile('gui/images/svg_icons/icon-clock.png')
+        self.ui.load_pages.patientDateAddedLabel.setIcon(icon)
+
+        services = patient['service_plans'][0]
+        discount = services['discount']
+        plan1Subtotal = 0
+        self.ui.load_pages.plan1Discount.setText(str(discount)+'%')
+        for service, price in services['services']:
+            serviceLabel = QLabel(service)
+            priceLabel = QLabel('$'+str(price))
+            serviceLabel.setMinimumWidth(700)
+            horizontalLayout = QHBoxLayout()
+            horizontalLayout.setContentsMargins(9,9,9,9)
+            horizontalLayout.addWidget(serviceLabel)
+            horizontalLayout.addWidget(priceLabel) #, 1, Qt.AlignRight)
+            # Spacer
+            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            horizontalLayout.addItem(spacer)
+            self.ui.load_pages.plan1ServicesVerticalLayout.addLayout(horizontalLayout)
+            priceLabel.setAlignment(Qt.AlignRight)
+            plan1Subtotal += price
+
+        services = patient['service_plans'][1]
+        discount = services['discount']
+        plan2Subtotal = 0
+        self.ui.load_pages.plan2Discount.setText(str(discount)+'%')
+        for service, price in services['services']:
+            serviceLabel = QLabel(service)
+            priceLabel = QLabel('$'+str(price))
+            serviceLabel.setMinimumWidth(700)
+            horizontalLayout = QHBoxLayout()
+            horizontalLayout.setContentsMargins(9,9,9,9)
+            horizontalLayout.addWidget(serviceLabel)
+            horizontalLayout.addWidget(priceLabel) #, 1, Qt.AlignRight)
+            # Spacer
+            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            horizontalLayout.addItem(spacer)
+            self.ui.load_pages.plan2ServicesVerticalLayout.addLayout(horizontalLayout)
+            priceLabel.setAlignment(Qt.AlignRight)
+            plan2Subtotal += price
+
+        services = patient['service_plans'][2]
+        discount = services['discount']
+        plan3Subtotal = 0
+        self.ui.load_pages.plan3Discount.setText(str(discount)+'%')
+        for service, price in services['services']:
+            serviceLabel = QLabel(service)
+            priceLabel = QLabel('$'+str(price))
+            serviceLabel.setMinimumWidth(700)
+            horizontalLayout = QHBoxLayout()
+            horizontalLayout.setContentsMargins(9,9,9,9)
+            horizontalLayout.addWidget(serviceLabel)
+            horizontalLayout.addWidget(priceLabel) #, 1, Qt.AlignRight)
+            # Spacer
+            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            horizontalLayout.addItem(spacer)
+            self.ui.load_pages.plan3ServicesVerticalLayout.addLayout(horizontalLayout)
+            priceLabel.setAlignment(Qt.AlignRight)
+            plan3Subtotal += price
+
+
+        self.ui.load_pages.plan1SubtotalAmount.setText(f'$ {plan1Subtotal}')
+        self.ui.load_pages.plan2SubtotalAmount.setText(f'$ {plan2Subtotal}')
+        self.ui.load_pages.plan3SubtotalAmount.setText(f'$ {plan3Subtotal}')
+
+        self.ui.load_pages.plan1DiscountAmount.setText(f'$ {plan1Subtotal*discount/100}')
+        self.ui.load_pages.plan2DiscountAmount.setText(f'$ {plan2Subtotal*discount/100}')
+        self.ui.load_pages.plan3DiscountAmount.setText(f'$ {plan3Subtotal*discount/100}')
+
+        self.ui.load_pages.plan1TotalAmount.setText(f'$ {plan1Subtotal - (plan1Subtotal*discount/100)}')
+        self.ui.load_pages.plan2TotalAmount.setText(f'$ {plan2Subtotal - (plan2Subtotal*discount/100)}')
+        self.ui.load_pages.plan3TotalAmount.setText(f'$ {plan3Subtotal - (plan3Subtotal*discount/100)}')
+
+
+    def goBackToPatientsPage(self):
+        self.ui.load_pages.pages.setCurrentIndex(2)
+
+
+    def checkForUpdates(self):
+        while True:
+            latest_version = get_latest_version().strip('.zip').strip('regenixx-')
+            # Check if the local version matches the latest version
+            with open('version.json', 'r') as f:
+                version_data = json.load(f)
+            local_version = version_data["version"]
+
+            if local_version != latest_version:
+                # Get user's input, whether they want to update the software or not
+                self.downloadUpdatesSignal.emit()
+                break
+                    
+            time.sleep(5)
+
+    def showUpdateAvaiableWindow(self):
+        messageBox = QMessageBox()
+        messageBox.setWindowTitle("Update Available")
+        messageBox.setText("New Update is available. Do you want to download new updates?")
+        messageBox.setIcon(QMessageBox.Information)
+        # Add some custom styles to the QMessageBox
+        messageBox.setStyleSheet(messageBoxStyle)
+        
+        # Add a button to the QMessageBox and show it
+        messageBox.addButton(QMessageBox.Yes)
+        messageBox.addButton(QMessageBox.No)
+
+        button_chosen = messageBox.exec()
+
+        if button_chosen == QMessageBox.No:
+            messageBox.close()
+            return False
+        elif button_chosen == QMessageBox.Yes:
+            # Dead end
+            return True
+
+
+    def download_updates(self):
+        url = get_url()
+        Popen(['python', 'download_updates.py', url])
+        sys.exit()
+
+
+    def handleDownloadUpdatesSignal(self):
+
+        downloadUpdates = self.showUpdateAvaiableWindow()
+        if downloadUpdates:
+            self.download_updates()
+            
 
 def main():
     global window, app
