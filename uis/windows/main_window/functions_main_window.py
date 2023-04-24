@@ -298,7 +298,7 @@ class MainFunctions():
         except Exception as e:
             # Rollback transaction in case of errors
             cursor.execute("ROLLBACK")
-            print(e)
+            MainFunctions.log_db_errors(str(e))
             return False
         finally:
             connection.close()
@@ -343,8 +343,8 @@ class MainFunctions():
             return services
 
         except Exception as e:
-            print(e)
-            return None
+            MainFunctions.log_db_errors(str(e))
+            return []
         finally:
             connection.close()
 
@@ -353,6 +353,15 @@ class MainFunctions():
         try:
             connection = sqlite3.connect('db.sqlite3')
             cursor = connection.cursor()
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS ServicesPlan (id INTEGER PRIMARY KEY, discount INTEGER)")
+            cursor.execute("CREATE TABLE IF NOT EXISTS Services (id INTEGER PRIMARY KEY, service_plan_id INTEGER REFERENCES ServicesPlan(id), service VARCHAR, price INTEGER)")
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS patientsTable (id INTEGER PRIMARY KEY, patients_name VARCHAR, \
+                        patients_date_of_birth DATE, date_added DATE, diagnosis VARCHAR, \
+                        services_plan1_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan2_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan3_id INTEGER REFERENCES ServicesPlan(id))")
 
             # Fetch all patients with their associated service plans
             cursor.execute('SELECT patientsTable.id, patientsTable.patients_name, patientsTable.patients_date_of_birth, \
@@ -389,8 +398,8 @@ class MainFunctions():
             return patients
 
         except Exception as e:
-            print(e)
-            return None
+            MainFunctions.log_db_errors(str(e))
+            return []
         finally:
             connection.close()
 
@@ -407,8 +416,8 @@ class MainFunctions():
             return services
 
         except Exception as e:
-            print(e)
-            return None
+            MainFunctions.log_db_errors(str(e))
+            return []
         finally:
             connection.close()
 
@@ -483,7 +492,8 @@ class MainFunctions():
             diagnoses = [item[0] for item in cursor.fetchall()]
             return diagnoses
         except Exception as e:
-            print(e)
+            MainFunctions.log_db_errors(str(e))
+            return []
 
     def add_diagnosis_in_db(diagnosis: str):
         try:
@@ -495,7 +505,7 @@ class MainFunctions():
             connection.commit()
             connection.close()
         except Exception as e:
-            print(e)
+            MainFunctions.log_db_errors(str(e))
             return False
         return True
     

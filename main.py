@@ -29,7 +29,7 @@ import ctypes
 import json
 import time
 
-myappid = 'tahiralauddin.regenixx.1.0.2' # arbitrary string
+myappid = 'tahiralauddin.regenixx.1.0.3' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
@@ -349,7 +349,11 @@ class MainWindow(QMainWindow):
 
     def download_updates(self):
         url = get_url()
-        Popen(['python', 'download_updates.py', url])
+        if getattr(sys, 'frozen', False):
+            # Running as a bundled executable, use _MEIPASS to get the temp folder
+            Popen(['updater.exe', url])
+        else:
+            Popen(['python', 'download_updates.py', url])
         sys.exit()
 
 

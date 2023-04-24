@@ -5,8 +5,12 @@ from widgets.py_push_button import PyPushButton
 import requests
 import time
 import os
-import json
 import zipfile
+import ctypes
+
+
+myappid = 'tahiralauddin.regenixx.1.0.3' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 
 class DownloadWindow(QMainWindow):
@@ -15,6 +19,9 @@ class DownloadWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
+        icon = QIcon()
+        icon.addFile('icon.ico')
+        self.setWindowIcon(icon)
         self.setWindowTitle('File Downloader')
         self.setFixedSize(500, 200)
 
@@ -265,13 +272,7 @@ class InstallationThread(QThread):
 
     def run(self):
         self.unzip_file_in_chunks(self.output_filename, os.path.abspath('.'), chunk_size=1024)
-        
-        # with open('version.json', 'r') as inputJson:
-        #     object = json.load(inputJson)
-        #     object['version'] = self.output_filename.strip('regenixx-').strip('.zip')
-        # with open('version.json', 'w') as outputJson:
-        #     json.dump(object, outputJson)
-
+        os.remove(self.output_filename)
 
 
     def cancel(self):
