@@ -1,15 +1,24 @@
 {
-  "version": "1.0.4",
+  
+  "version": "1.0.5",
   "changes": [
-    "Patient Records can be deleted now",
-    "Quantity attribute for services added",
-    "Pricing format is changed to $ 00.00 in both PDF and UI",
-    "Shortcuts added for Save Diagnoses, Upload Images and download Plan"
+    "PDF Total Price spacing issue resolved",
+    "PDF Total and Subtotal calculation bug fixed"
   ],
   "release_date": "2023-04-26",
   "author": "Tahir Alauddin",
   "description": "Regenixx is a software for a medical office. It is used for creating personalized printable pdfs for the patients with different pricing and plans.",
   "changelog": [
+    {
+      "version": "1.0.4",
+      "changes": [
+        "Patient Records can be deleted now",
+        "Quantity attribute for services added",
+        "Pricing format is changed to $ 00.00 in both PDF and UI",
+        "Shortcuts added for Save Diagnoses, Upload Images and download Plan"
+      ],
+      "release_date": "2023-04-26"
+    },
     {
       "version": "1.0.3",
       "changes": [

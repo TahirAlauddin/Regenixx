@@ -10,6 +10,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 import reportlab
 import sys
 import os
+from decimal import Decimal
 
 # Register fonts
 fonts_directory = 'fonts'
@@ -22,7 +23,7 @@ pdfmetrics.registerFont(TTFont('Montserrat-Bold', r'Montserrat-Bold.ttf'))
 
 
 def writeServicesPlan1(canvas: Canvas, services: list, discount: int):
-    prices = [float(service[1]) for service in services]
+    prices = [Decimal(service[1]) * int(service[2]) for service in services]
     canvas.setFillColor(HexColor(PLAN1_COLOR))
     y = SERVICE1_Y
 
@@ -63,7 +64,7 @@ def writeServicesPlan1(canvas: Canvas, services: list, discount: int):
 
 
 def writeServicesPlan2(canvas: Canvas, services: list, discount: int):
-    prices = [float(service[1]) for service in services]
+    prices = [Decimal(service[1]) * int(service[2]) for service in services]
     canvas.setFillColor(HexColor(PLAN2_COLOR))
     y = SERVICE1_Y
 
@@ -106,7 +107,7 @@ def writeServicesPlan2(canvas: Canvas, services: list, discount: int):
         
 
 def writeServicesPlan3(canvas: Canvas, services: list, discount: int):
-    prices = [float(service[1]) for service in services]
+    prices = [Decimal(service[1]) * int(service[2]) for service in services]
     canvas.setFillColor(HexColor(PLAN3_COLOR))
     y = SERVICE1_Y
 

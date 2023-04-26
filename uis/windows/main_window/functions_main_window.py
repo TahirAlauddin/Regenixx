@@ -141,12 +141,12 @@ class MainFunctions():
         if file:
             MainFunctions.setImageForPixmap(label, 350, 280, file)
 
-        if label == self.image1LabelPixmap:
-            self.image_plan1 = file
-        elif label == self.image2LabelPixmap:
-            self.image_plan2 = file
-        elif label == self.image3LabelPixmap:
-            self.image_plan3 = file
+            if label == self.image1LabelPixmap:
+                self.image_plan1 = file
+            elif label == self.image2LabelPixmap:
+                self.image_plan2 = file
+            elif label == self.image3LabelPixmap:
+                self.image_plan3 = file
 
         
     # Functions for Add, Remove

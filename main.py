@@ -1,8 +1,7 @@
 # ///////////////////////////////////////////////////////////////
 #
-# BY: WANDERSON M.PIMENTA
 # PROJECT MADE WITH: Qt Designer and PySide6
-# V: 1.0.0
+# V: 1.0.5
 #
 # This project can be used freely for all uses, as long as they maintain the
 # respective credits only in the Python scripts, any information in the visual
@@ -30,7 +29,7 @@ import ctypes
 import json
 import time
 
-myappid = 'tahiralauddin.regenixx.1.0.3' # arbitrary string
+myappid = 'tahiralauddin.regenixx.1.0.5' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from threading import Thread
