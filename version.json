@@ -1,15 +1,27 @@
 {
-  "version": "1.0.3",
+  "version": "1.0.4",
   "changes": [
-    "Download Updates window icon added"
+    "Patient Records can be deleted now",
+    "Quantity attribute for services added",
+    "Pricing format is changed to $ 00.00 in both PDF and UI",
+    "Shortcuts added for Save Diagnoses, Upload Images and download Plan"
   ],
-  "release_date": "2023-04-24",
+  "release_date": "2023-04-26",
   "author": "Tahir Alauddin",
   "description": "Regenixx is a software for a medical office. It is used for creating personalized printable pdfs for the patients with different pricing and plans.",
   "changelog": [
     {
+      "version": "1.0.3",
+      "changes": [
+        "Download Updates window icon added",
+        "Patient Table Database Bug fixed",
+        "updater.exe file not being called issue resolved"
+      ],
+      "release_date": "2023-04-24"
+    },
+    {
       "version": "1.0.2",
-      "date": "2023-04-17",
+      "release_date": "2023-04-17",
       "changes": [
         "Auto Update feature added.",
         "Patients information saved in database now"
@@ -17,7 +29,7 @@
     },
       {
         "version": "1.0.1",
-        "date": "2023-04-08",
+        "release_date": "2023-04-08",
         "changes": [
           "Added pause, resume, and cancel download feature.",
           "Fixed minor bugs."
@@ -25,7 +37,7 @@
       },
       {
         "version": "1.0.0",
-        "date": "2023-03-29",
+        "release_date": "2023-03-29",
         "changes": [
           "Project Intialized.",
           "Drag and Drop Features.",

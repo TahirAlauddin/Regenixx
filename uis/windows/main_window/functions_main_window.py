@@ -135,6 +135,19 @@ class MainFunctions():
         self.group.addAnimation(self.right_box)
         self.group.start()
 
+               
+    def selectImage(self, label):
+        file, _ = QFileDialog.getOpenFileName(self, 'Pdf Images', '.', 'Images (*.jpg;*.png;*jpeg)' )
+        if file:
+            MainFunctions.setImageForPixmap(label, 350, 280, file)
+
+        if label == self.image1LabelPixmap:
+            self.image_plan1 = file
+        elif label == self.image2LabelPixmap:
+            self.image_plan2 = file
+        elif label == self.image3LabelPixmap:
+            self.image_plan3 = file
+
         
     # Functions for Add, Remove
     def addRow(tableWidget: QTableWidget):
@@ -148,8 +161,30 @@ class MainFunctions():
     def removeRow(tableWidget: QTableWidget):
         tableWidget.removeRow(tableWidget.currentRow())
 
-    def createPDF(mainWindow):
+
+    def getTableContent(table):
+        result = []
+        for row in range(table.rowCount()):
+            try:
+                title = table.item(row, 0).text()
+                cost = table.item(row, 1).text()
+                quantity = table.item(row, 2).text()
+            except:
+                # If reading the data from tables throws error, it means the cell were empty
+                raise Exception(f'Empty Cell in table {table.objectName()}')
+            
+            # If either quanity or cost is not a number, throw an error
+            if not quantity.isdigit():
+                raise Exception(f'Incorrect Data Type for Quantity in table {table.objectName()}.')
+            if not cost.isdigit():
+                raise Exception(f'Incorrect Data Type for Cost in table {table.objectName()}.')
+            
+            result.append([title, cost, quantity])
         
+        return result
+    
+
+    def createPDF(mainWindow):
         mainWindow.pdfCreateSignal.emit()
 
         # Create PDF
@@ -157,38 +192,47 @@ class MainFunctions():
         for diagnosisLineEdit in mainWindow.diagnosesLineEdits:
             diagnoses.append(diagnosisLineEdit.text())
         
+        # Write all diagnoses into 1 diagnosis
         diagnosis = ', '.join(diagnoses)
         patients_name = mainWindow.patientsNameLineEdit.text()
         patients_date_of_birth = mainWindow.patientsDateOfBirth.date().toPython().strftime("%B %d, %Y")
 
+        # Get discounts for each plan
         discountPlan1 = int(mainWindow.discountComboBoxBestTable.currentText().strip('%'))
         discountPlan2 = int(mainWindow.discountComboBoxBetterTable.currentText().strip('%'))
         discountPlan3 = int(mainWindow.discountComboBoxGoodTable.currentText().strip('%'))
-        services_plan1 = []
-        services_plan2 = []
-        services_plan3 = []
-        goodTable = mainWindow.goodTable
-        betterTable = mainWindow.betterTable
-        bestTable = mainWindow.bestTable
+        
+        # Get the data from the tables
+        try:
+            # Also use list slicing to get the first 8 rows only
+            services_plan1 = MainFunctions.getTableContent(mainWindow.bestTable)[:8]
+            services_plan2 = MainFunctions.getTableContent(mainWindow.betterTable)[:8]
+            services_plan3 = MainFunctions.getTableContent(mainWindow.goodTable)[:8]
+        except Exception as e:
+            QMessageBox.critical(mainWindow, "Error", f"{str(e)}")
+            mainWindow.removeProgressBar.emit()
+            return
+        
+        # Handle wrong/incomplete user input (Text)
+        if not all([services_plan1, services_plan2, services_plan3]):
+            QMessageBox.critical(mainWindow, "Incomplete Information", f"Please make sure all three tables have atleast 1 row of valid information.")
+            mainWindow.removeProgressBar.emit()
+            return
+        
+        if (not patients_name):
+            QMessageBox.critical(mainWindow, "Incomplete Information", f"Please enter Patient's Name.")
+            mainWindow.removeProgressBar.emit()
+            return
+        if (not diagnosis):
+            QMessageBox.critical(mainWindow, "Incomplete Information", f"Please enter atleast 1 Diagnosis.")
+            mainWindow.removeProgressBar.emit()
+            return
+            
 
-        for row in range(goodTable.rowCount()):
-            title = goodTable.item(row, 0).text()
-            cost = goodTable.item(row, 1).text()
-            services_plan3.append([title, cost])
-
-        for row in range(betterTable.rowCount()):
-            title = betterTable.item(row, 0).text()
-            cost = betterTable.item(row, 1).text()
-            services_plan2.append([title, cost])
-
-        for row in range(bestTable.rowCount()):
-            title = bestTable.item(row, 0).text()
-            cost = bestTable.item(row, 1).text()
-            services_plan1.append([title, cost])
-
+        # Handle wrong/incomplete user input (Images)
         if not all([mainWindow.image_plan1, mainWindow.image_plan2, mainWindow.image_plan3]):
             # User must provide all images
-            QMessageBox.critical(mainWindow, "Error occured!", "Please provide images!")
+            QMessageBox.critical(mainWindow, "Error occured!", "Please provide all images!")
             mainWindow.removeProgressBar.emit()
             return
             mainWindow.image_plan1, mainWindow.image_plan2, mainWindow.image_plan3 = ['images/consultation2.jpg', 
@@ -196,9 +240,9 @@ class MainFunctions():
                                                                                       'images/JENNWIDE2.jpg']
         
         for diagnosis_for_db in diagnoses:
-            MainFunctions.add_diagnosis_in_db(diagnosis_for_db)
+            Database.add_diagnosis_in_db(diagnosis_for_db)
 
-        diagnoses = MainFunctions.get_diagnosis_from_db()
+        diagnoses = Database.get_diagnosis_from_db()
         mainWindow.SetupMainWindow.removeCustomWidgetFromWindow(mainWindow)
         mainWindow.diagnosisLineEdit = AutocompleteSearchBox(
             text = "",
@@ -241,186 +285,17 @@ class MainFunctions():
                 os.remove(image_plan3)
 
                 # Add Patient into database
-                MainFunctions.add_patient_to_database(patients_name, patients_date_of_birth,
+                Database.add_patient_to_database(patients_name, patients_date_of_birth,
                             diagnosis, services_plan1, services_plan2, services_plan3,
                             discountPlan1, discountPlan2, discountPlan3)
                 
                 mainWindow.patientAddedToDatabaseSignal.emit()
 
-                
-
-            except:
-                pass
+            except Exception as e:
+                MainFunctions.log_db_errors(str(e), 'error.log')
             
         thread = Thread(target=populateDataIntoPDF)
         thread.start()
-
-
-    def add_patient_to_database(patient_name, date_of_birth, diagnosis,
-                                services_plan1, services_plan2, services_plan3,
-                                discountPlan1, discountPlan2, discountPlan3):
-        try:
-            from datetime import datetime
-
-            # get current date and time
-            current_date = datetime.now()
-
-            # format current date as string in YYYY-MM-DD format
-            date_added = current_date.strftime('%Y-%m-%d')
-
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-            
-            # Start transaction
-            cursor.execute('BEGIN')
-
-            services_plan1_id = MainFunctions.add_service_plan(cursor, services_plan1, discountPlan1)
-            services_plan2_id = MainFunctions.add_service_plan(cursor, services_plan2, discountPlan2)
-            services_plan3_id = MainFunctions.add_service_plan(cursor, services_plan3, discountPlan3)
-
-            cursor.execute("CREATE TABLE IF NOT EXISTS patientsTable (id INTEGER PRIMARY KEY, patients_name VARCHAR, \
-                        patients_date_of_birth DATE, date_added DATE, diagnosis VARCHAR, \
-                        services_plan1_id INTEGER REFERENCES ServicesPlan(id), \
-                        services_plan2_id INTEGER REFERENCES ServicesPlan(id), \
-                        services_plan3_id INTEGER REFERENCES ServicesPlan(id))")
-            if diagnosis:
-                cursor.execute("INSERT INTO patientsTable (patients_name, patients_date_of_birth, date_added,\
-                                diagnosis, services_plan1_id, services_plan2_id, services_plan3_id) \
-                                VALUES (?, ?, ?, ?, ?, ?, ?)", 
-                (patient_name, date_of_birth, date_added, diagnosis, services_plan1_id, services_plan2_id, services_plan3_id))
-
-                
-            # cursor.execute('COMMIT')
-
-            # End transaction
-            connection.commit()
-
-        except Exception as e:
-            # Rollback transaction in case of errors
-            cursor.execute("ROLLBACK")
-            MainFunctions.log_db_errors(str(e))
-            return False
-        finally:
-            connection.close()
-        return True
-    
-    def add_service_plan(cursor, services, discount):
-
-        
-        cursor.execute("CREATE TABLE IF NOT EXISTS ServicesPlan (id INTEGER PRIMARY KEY, discount INTEGER)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS Services (id INTEGER PRIMARY KEY, service_plan_id INTEGER REFERENCES ServicesPlan(id), service VARCHAR, price INTEGER)")
-
-        # Insert service plan into ServicesPlan table
-        cursor.execute('INSERT INTO ServicesPlan (discount) VALUES (?)', (discount,)) 
-        service_plan_id = cursor.lastrowid
-
-        # Insert each service into Services table
-        for service, price in services:
-            cursor.execute('INSERT INTO Services (service_plan_id, service, price) VALUES (?, ?, ?)',
-                            (service_plan_id, service, price))
-
-        return service_plan_id
-    
-
-    def get_services():
-        try:
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-
-            # Fetch all service plans with their associated services
-            cursor.execute('SELECT ServicesPlan.id, Services.service, Services.price, ServicesPlan.discount \
-                            FROM ServicesPlan JOIN Services ON Services.service_plan_id = ServicesPlan.id')
-            service_data = cursor.fetchall()
-
-            # Transform data into a dictionary where each service plan is a key and its value is a list of associated services
-            services = {}
-            for row in service_data:
-                service_plan_id, service, price, discount = row
-                if service_plan_id not in services:
-                    services[service_plan_id] = {'discount': discount, 'services': []}
-                services[service_plan_id]['services'].append({'service': service, 'price': price})
-
-            return services
-
-        except Exception as e:
-            MainFunctions.log_db_errors(str(e))
-            return []
-        finally:
-            connection.close()
-
-
-    def get_patients():
-        try:
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-
-            cursor.execute("CREATE TABLE IF NOT EXISTS ServicesPlan (id INTEGER PRIMARY KEY, discount INTEGER)")
-            cursor.execute("CREATE TABLE IF NOT EXISTS Services (id INTEGER PRIMARY KEY, service_plan_id INTEGER REFERENCES ServicesPlan(id), service VARCHAR, price INTEGER)")
-
-            cursor.execute("CREATE TABLE IF NOT EXISTS patientsTable (id INTEGER PRIMARY KEY, patients_name VARCHAR, \
-                        patients_date_of_birth DATE, date_added DATE, diagnosis VARCHAR, \
-                        services_plan1_id INTEGER REFERENCES ServicesPlan(id), \
-                        services_plan2_id INTEGER REFERENCES ServicesPlan(id), \
-                        services_plan3_id INTEGER REFERENCES ServicesPlan(id))")
-
-            # Fetch all patients with their associated service plans
-            cursor.execute('SELECT patientsTable.id, patientsTable.patients_name, patientsTable.patients_date_of_birth, \
-                            patientsTable.date_added, patientsTable.diagnosis, \
-                            ServicesPlan1.id, ServicesPlan1.discount, \
-                            ServicesPlan2.id, ServicesPlan2.discount, \
-                            ServicesPlan3.id, ServicesPlan3.discount \
-                            FROM patientsTable \
-                            JOIN ServicesPlan AS ServicesPlan1 ON patientsTable.services_plan1_id = ServicesPlan1.id \
-                            JOIN ServicesPlan AS ServicesPlan2 ON patientsTable.services_plan2_id = ServicesPlan2.id \
-                            JOIN ServicesPlan AS ServicesPlan3 ON patientsTable.services_plan3_id = ServicesPlan3.id')
-            patient_data = cursor.fetchall()
-
-            # Transform data into a list of dictionaries where each dictionary represents a patient
-            patients = []
-            for row in patient_data:
-                patient_id, patient_name, date_of_birth, date_added, diagnosis, \
-                service_plan1_id, discount1, service_plan2_id, discount2, service_plan3_id, discount3 = row
-
-                patient = {'id': patient_id,
-                        'name': patient_name,
-                        'date_of_birth': date_of_birth,
-                        'date_added': date_added,
-                        'diagnosis': diagnosis,
-                        'service_plans': [
-                            {'services': MainFunctions.get_services_by_service_plan_id(service_plan1_id), 'discount': discount1},
-                            {'services': MainFunctions.get_services_by_service_plan_id(service_plan2_id), 'discount': discount2},
-                            {'services': MainFunctions.get_services_by_service_plan_id(service_plan3_id), 'discount': discount3}
-                        ]
-                        }
-
-                patients.append(patient)
-
-            return patients
-
-        except Exception as e:
-            MainFunctions.log_db_errors(str(e))
-            return []
-        finally:
-            connection.close()
-
-
-    def get_services_by_service_plan_id(service_plan_id):
-        try:
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-
-            # Select all services for the given service plan ID
-            cursor.execute('SELECT service, price FROM Services WHERE service_plan_id = ?', (service_plan_id,))
-            services = cursor.fetchall()
-
-            return services
-
-        except Exception as e:
-            MainFunctions.log_db_errors(str(e))
-            return []
-        finally:
-            connection.close()
-
 
 
     def get_users_desktop_folder():
@@ -431,7 +306,6 @@ class MainFunctions():
         desktop_path = winreg.QueryValueEx(key, "Desktop")[0]
 
         return desktop_path
-
 
     
     def get_services_from_excel(window):
@@ -483,87 +357,298 @@ class MainFunctions():
         label.setPixmap(pixmap)
         label.setMaximumSize(QSize(width, height))
 
-    def get_diagnosis_from_db():
-        try:
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS diagnosisTable (id INTEGER PRIMARY KEY, diagnosis VARCHAR UNIQUE)")
-            cursor.execute("SELECT diagnosis FROM diagnosisTable")
-            diagnoses = [item[0] for item in cursor.fetchall()]
-            return diagnoses
-        except Exception as e:
-            MainFunctions.log_db_errors(str(e))
-            return []
-
-    def add_diagnosis_in_db(diagnosis: str):
-        try:
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS diagnosisTable (id INTEGER PRIMARY KEY, diagnosis VARCHAR UNIQUE)")
-            if diagnosis:
-                cursor.execute("INSERT INTO diagnosisTable (diagnosis) VALUES (?)", (diagnosis,))
-            connection.commit()
-            connection.close()
-        except Exception as e:
-            MainFunctions.log_db_errors(str(e))
-            return False
-        return True
-    
-
-    def update_diagnoses_in_db(diagnoses):
-        # diagnoses = MainFunctions.list_diagnosis_from_db()
-        
-        conn = sqlite3.connect('db.sqlite3')
-        cursor = conn.cursor()
-        # Begin transaction
-        try:
-            cursor.execute("BEGIN")
-
-            cursor.execute("DELETE FROM diagnosisTable;")
-
-            # Insert data into diagnosisTable
-            cursor.executemany("INSERT INTO diagnosisTable (id, diagnosis) VALUES (?, ?)", diagnoses)
-
-            # Commit transaction if all statements are successful
-            conn.commit()
-            print("Transaction completed successfully.")
-
-        except:
-            # Rollback transaction if any statement fails
-            conn.rollback()
-            MainFunctions.log_db_errors("Transaction failed. Rolled back changes.")
-
-        finally:
-            # Close cursor and connection
-            cursor.close()
-            conn.close()
-
-
-    def list_diagnosis_from_db():
-        try:
-            connection = sqlite3.connect('db.sqlite3')
-            cursor = connection.cursor()
-            cursor.execute("CREATE TABLE IF NOT EXISTS diagnosisTable (id INTEGER PRIMARY KEY, diagnosis VARCHAR UNIQUE)")
-            cursor.execute("SELECT id, diagnosis FROM diagnosisTable")
-            diagnoses = [(item[0], item[1]) for item in cursor.fetchall()]
-            return diagnoses
-        except:
-            MainFunctions.log_db_errors()
-
     def changeExcelFile(window):
         filename, _ = QFileDialog.getOpenFileName(window, 'Select Excel File', '', 'Excel Files (*.xlsx)')
         if filename:
             filecontent = open(filename, 'rb').read()
             open(EXCEL_FILE_NAME, 'wb').write(filecontent)
 
-    def log_db_errors(message=None):
+    def log_db_errors(message=None, log_file='db.error.log'):
         import traceback, datetime
         # Get error message with traceback
         error_message = traceback.format_exc()
         # Format error message with timestamp
         log_message = f"{datetime.datetime.now()} - ERROR - {error_message}"
-        with open('db.error.log', 'a') as error_log_file:
+        with open(log_file, 'a') as error_log_file:
             error_log_file.write(log_message)
             if message:
                 error_log_file.write(message + '\n')
                 
+
+
+
+import sqlite3
+from datetime import datetime
+
+
+class Database:
+
+    def add_patient_to_database(patient_name, date_of_birth, diagnosis,
+                                services_plan1, services_plan2, services_plan3,
+                                discountPlan1, discountPlan2, discountPlan3):
+        try:
+
+            # get current date and time
+            current_date = datetime.now()
+
+            # format current date as string in YYYY-MM-DD format
+            date_added = current_date.strftime('%Y-%m-%d')
+
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+            
+            # Start transaction
+            cursor.execute('BEGIN')
+
+            services_plan1_id = Database.add_service_plan(cursor, services_plan1, discountPlan1)
+            services_plan2_id = Database.add_service_plan(cursor, services_plan2, discountPlan2)
+            services_plan3_id = Database.add_service_plan(cursor, services_plan3, discountPlan3)
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS Patients (id INTEGER PRIMARY KEY, patients_name VARCHAR, \
+                        patients_date_of_birth DATE, date_added DATE, diagnosis VARCHAR, \
+                        services_plan1_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan2_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan3_id INTEGER REFERENCES ServicesPlan(id))")
+            if diagnosis:
+                cursor.execute("INSERT INTO Patients (patients_name, patients_date_of_birth, date_added,\
+                                diagnosis, services_plan1_id, services_plan2_id, services_plan3_id) \
+                                VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                (patient_name, date_of_birth, date_added, diagnosis, services_plan1_id, services_plan2_id, services_plan3_id))
+
+
+            # End transaction
+            connection.commit()
+
+        except Exception as e:
+            # Rollback transaction in case of errors
+            cursor.execute("ROLLBACK")
+            MainFunctions.log_db_errors(str(e))
+            return False
+        finally:
+            connection.close()
+        return True
+    
+
+    def add_service_plan(cursor, services, discount):
+        
+        cursor.execute("CREATE TABLE IF NOT EXISTS ServicesPlan (id INTEGER PRIMARY KEY, discount INTEGER)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS Services (id INTEGER PRIMARY KEY, service_plan_id INTEGER REFERENCES ServicesPlan(id), service VARCHAR, quantity INEGER, price INTEGER)")
+
+        # Insert service plan into ServicesPlan table
+        cursor.execute('INSERT INTO ServicesPlan (discount) VALUES (?)', (discount,)) 
+        service_plan_id = cursor.lastrowid
+
+        # Insert each service into Services table
+        for service, quantity, price in services:
+            cursor.execute('INSERT INTO Services (service_plan_id, service, quantity, price) VALUES (?, ?, ?, ?)',
+                            (service_plan_id, service, quantity, price))
+
+        return service_plan_id
+    
+
+    def get_services():
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            # Fetch all service plans with their associated services
+            cursor.execute('SELECT ServicesPlan.id, Services.service, Services.quantity, Services.price, ServicesPlan.discount \
+                            FROM ServicesPlan JOIN Services ON Services.service_plan_id = ServicesPlan.id')
+            service_data = cursor.fetchall()
+
+            # Transform data into a dictionary where each service plan is a key and its value is a list of associated services
+            services = {}
+            for row in service_data:
+                service_plan_id, service, quantity, price, discount = row
+                if service_plan_id not in services:
+                    services[service_plan_id] = {'discount': discount, 'services': []}
+                services[service_plan_id]['services'].append({'service': service, 'quantity': quantity, 'price': price})
+
+
+        except Exception as e:
+            MainFunctions.log_db_errors(str(e))
+            services = []
+        finally:
+            cursor.close()
+            connection.close()
+        return services
+
+
+    def get_patients():
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS ServicesPlan (id INTEGER PRIMARY KEY, discount INTEGER)")
+            cursor.execute("CREATE TABLE IF NOT EXISTS Services (id INTEGER PRIMARY KEY, service_plan_id INTEGER REFERENCES ServicesPlan(id), service VARCHAR, quantity INTEGER, price INTEGER)")
+
+            cursor.execute("CREATE TABLE IF NOT EXISTS Patients (id INTEGER PRIMARY KEY, patients_name VARCHAR, \
+                        patients_date_of_birth DATE, date_added DATE, diagnosis VARCHAR, \
+                        services_plan1_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan2_id INTEGER REFERENCES ServicesPlan(id), \
+                        services_plan3_id INTEGER REFERENCES ServicesPlan(id))")
+
+            # Fetch all patients with their associated service plans
+            cursor.execute('SELECT Patients.id, Patients.patients_name, Patients.patients_date_of_birth, \
+                            Patients.date_added, Patients.diagnosis, \
+                            ServicesPlan1.id, ServicesPlan1.discount, \
+                            ServicesPlan2.id, ServicesPlan2.discount, \
+                            ServicesPlan3.id, ServicesPlan3.discount \
+                            FROM Patients \
+                            JOIN ServicesPlan AS ServicesPlan1 ON Patients.services_plan1_id = ServicesPlan1.id \
+                            JOIN ServicesPlan AS ServicesPlan2 ON Patients.services_plan2_id = ServicesPlan2.id \
+                            JOIN ServicesPlan AS ServicesPlan3 ON Patients.services_plan3_id = ServicesPlan3.id')
+            patient_data = cursor.fetchall()
+
+            # Transform data into a list of dictionaries where each dictionary represents a patient
+            patients = []
+            for row in patient_data:
+                patient_id, patient_name, date_of_birth, date_added, diagnosis, \
+                service_plan1_id, discount1, service_plan2_id, discount2, service_plan3_id, discount3 = row
+
+                patient = {'id': patient_id,
+                        'name': patient_name,
+                        'date_of_birth': date_of_birth,
+                        'date_added': date_added,
+                        'diagnosis': diagnosis,
+                        'service_plans': [
+                            {'services': Database.get_services_by_service_plan_id(service_plan1_id), 'discount': discount1},
+                            {'services': Database.get_services_by_service_plan_id(service_plan2_id), 'discount': discount2},
+                            {'services': Database.get_services_by_service_plan_id(service_plan3_id), 'discount': discount3}
+                        ]
+                        }
+
+                patients.append(patient)
+
+
+        except Exception as e:
+            MainFunctions.log_db_errors(str(e))
+            patients = []
+        finally:
+            cursor.close()
+            connection.close()
+        return patients
+
+
+    def delete_patient(patient_id):
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+            result = cursor.execute("SELECT services_plan1_id, services_plan2_id, services_plan3_id FROM Patients WHERE id = ?", 
+                                    (patient_id,))
+            services_plan1_id, services_plan2_id, services_plan3_id = result.fetchall()[0]
+            cursor.execute("DELETE FROM Patients WHERE id = ?", (patient_id,))
+            cursor.execute("DELETE FROM ServicesPlan WHERE id = ?", (services_plan1_id,))
+            cursor.execute("DELETE FROM ServicesPlan WHERE id = ?", (services_plan2_id,))
+            cursor.execute("DELETE FROM ServicesPlan WHERE id = ?", (services_plan3_id,))
+            connection.commit()
+
+        except Exception as e:
+            MainFunctions.log_db_errors(str(e))
+
+        finally:
+            cursor.close()
+            connection.close()
+
+
+    def get_services_by_service_plan_id(service_plan_id):
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+
+            # Select all services for the given service plan ID
+            cursor.execute('SELECT service, quantity, price FROM Services WHERE service_plan_id = ?', (service_plan_id,))
+            services = cursor.fetchall()
+
+        except Exception as e:
+            MainFunctions.log_db_errors(str(e))
+            services = []
+        finally:
+            cursor.close()
+            connection.close()
+        return services
+
+
+    def get_diagnosis_from_db():
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS Diagnosis (id INTEGER PRIMARY KEY, diagnosis VARCHAR UNIQUE)")
+            cursor.execute("SELECT diagnosis FROM Diagnosis")
+            diagnoses = [item[0] for item in cursor.fetchall()]
+        except Exception as e:
+            MainFunctions.log_db_errors(str(e))
+            diagnoses = []
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            connection.close()
+        return diagnoses
+
+
+    def add_diagnosis_in_db(diagnosis: str):
+        added = False
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS Diagnosis (id INTEGER PRIMARY KEY, diagnosis VARCHAR UNIQUE)")
+            if diagnosis:
+                cursor.execute("INSERT INTO Diagnosis (diagnosis) VALUES (?)", (diagnosis,))
+            added = True
+            connection.commit()
+        except Exception as e:
+            MainFunctions.log_db_errors(str(e))
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            connection.close()
+        return added
+
+
+    def update_diagnoses_in_db(diagnoses):
+        successfully_updated = False
+        conn = sqlite3.connect('db.sqlite3')
+        cursor = conn.cursor()
+        # Begin transaction
+        try:
+            cursor.execute("BEGIN")
+
+            cursor.execute("DELETE FROM Diagnosis;")
+
+            # Insert data into Diagnosis
+            cursor.executemany("INSERT INTO Diagnosis (id, diagnosis) VALUES (?, ?)", diagnoses)
+
+            # Commit transaction if all statements are successful
+            conn.commit()
+            print("Transaction completed successfully.")
+            successfully_updated = True
+
+        except:
+            # Rollback transaction if any statement fails
+            conn.rollback()
+            MainFunctions.log_db_errors("Transaction failed. Rolled back changes.")
+            successfully_updated = False
+
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            conn.close()
+
+        return successfully_updated
+
+
+    def list_diagnosis_from_db():
+        try:
+            connection = sqlite3.connect('db.sqlite3')
+            cursor = connection.cursor()
+            cursor.execute("CREATE TABLE IF NOT EXISTS Diagnosis (id INTEGER PRIMARY KEY, diagnosis VARCHAR UNIQUE)")
+            cursor.execute("SELECT id, diagnosis FROM Diagnosis")
+            diagnoses = [(item[0], item[1]) for item in cursor.fetchall()]
+            return diagnoses
+        except:
+            MainFunctions.log_db_errors()
+        finally:
+            # Close cursor and connection
+            cursor.close()
+            connection.close()
+            

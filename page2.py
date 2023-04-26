@@ -26,12 +26,18 @@ def writeServicesPlan1(canvas: Canvas, services: list, discount: int):
     canvas.setFillColor(HexColor(PLAN1_COLOR))
     y = SERVICE1_Y
 
-    for service in services[:6]: # Use slicing to make sure, only first 6 elements get displayed
+    for service in services:
+        if str(service[2]).isdigit() and int(service[2]) > 1:
+            service_title = f'{service[0]} ({service[2]}x)'
+            service_price = int(service[1]) * int(service[2])
+        else:
+            service_title = f'{service[0]}'
+            service_price = service[1]
         canvas.setFont("Montserrat-Regular", 10)
-        canvas.drawRightString(270, y,  f'${service[1]}')  
+        canvas.drawRightString(270, y,  f'${service_price}')  
         canvas.setFont("Montserrat-Bold", 9)
 
-        service_text = wrap(service[0], width=30, break_long_words=True)
+        service_text = wrap(service_title, width=30, break_long_words=True)
         for service_line in service_text:
             canvas.drawString(PLAN1_SERVICES_X, y, service_line)
             y -= 10
@@ -41,14 +47,19 @@ def writeServicesPlan1(canvas: Canvas, services: list, discount: int):
     # Discount Price
     subtotal_price = sum(prices)
     discount_price = (sum(prices) * discount) / 100
+    # String Formats
+    subtotal_price_string = '{:.2f}'.format(subtotal_price)
+    total_price_string = '{:.2f}'.format(subtotal_price-discount_price)
+    discounted_price_string = '{:.2f}'.format(discount_price)
+
     canvas.setFont("Montserrat-Black", 11)
-    canvas.drawString(PLAN1_SUBTOTAL_PRICE_X, SUBTOTAL_PRICE_Y, f'${round(subtotal_price, 2)}') 
-    canvas.drawString(PLAN1_DISCOUNT_PRICE_X, DISCOUNT_PRICE_Y, f'{discount}% OFF (${round(discount_price, 2)})') 
+    canvas.drawString(PLAN1_SUBTOTAL_PRICE_X, SUBTOTAL_PRICE_Y, f'${subtotal_price_string}') 
+    canvas.drawString(PLAN1_DISCOUNT_PRICE_X, DISCOUNT_PRICE_Y, f'{discount}% OFF (${discounted_price_string})') 
         
     # Change Color for Total Price
     canvas.setFillColor(HexColor(PLAN1_TOTAL_PRICE_COLOR))
     # Total Price
-    canvas.drawString(PLAN1_TOTAL_PRICE_X, TOTAL_PRICE_Y, f'${round(subtotal_price-discount_price, 1)}') 
+    canvas.drawString(PLAN1_TOTAL_PRICE_X, TOTAL_PRICE_Y, f'${total_price_string}') 
 
 
 def writeServicesPlan2(canvas: Canvas, services: list, discount: int):
@@ -56,12 +67,18 @@ def writeServicesPlan2(canvas: Canvas, services: list, discount: int):
     canvas.setFillColor(HexColor(PLAN2_COLOR))
     y = SERVICE1_Y
 
-    for service in services[:6]: # Use slicing to make sure, only first 6 elements get displayed
+    for service in services:
+        if str(service[2]).isdigit() and int(service[2]) > 1:
+            service_title = f'{service[0]} ({service[2]}x)'
+            service_price = int(service[1]) * int(service[2])
+        else:
+            service_title = f'{service[0]}'
+            service_price = service[1]
         canvas.setFont("Montserrat-Regular", 10)
-        canvas.drawRightString(510, y,  f'${service[1]}') 
+        canvas.drawRightString(510, y,  f'${service_price}') 
         canvas.setFont("Montserrat-Bold", 9)
 
-        service_text = wrap(service[0], width=30, break_long_words=True)
+        service_text = wrap(service_title, width=30, break_long_words=True)
         for service_line in service_text:
             canvas.drawString(PLAN2_SERVICES_X, y, service_line)
             y -= 10
@@ -72,14 +89,20 @@ def writeServicesPlan2(canvas: Canvas, services: list, discount: int):
     # Discount Price
     subtotal_price = sum(prices)
     discount_price = (sum(prices) * discount) / 100
+
+    # String Formats
+    subtotal_price_string = '{:.2f}'.format(subtotal_price)
+    total_price_string = '{:.2f}'.format(subtotal_price-discount_price)
+    discounted_price_string = '{:.2f}'.format(discount_price)
+
     canvas.setFont("Montserrat-Black", 11)
-    canvas.drawString(PLAN2_SUBTOTAL_PRICE_X, SUBTOTAL_PRICE_Y, f'${round(subtotal_price, 2)}') 
-    canvas.drawString(PLAN2_DISCOUNT_PRICE_X, DISCOUNT_PRICE_Y, f'{discount}% OFF (${round(discount_price, 2)})') 
+    canvas.drawString(PLAN2_SUBTOTAL_PRICE_X, SUBTOTAL_PRICE_Y, f'${subtotal_price_string}') 
+    canvas.drawString(PLAN2_DISCOUNT_PRICE_X, DISCOUNT_PRICE_Y, f'{discount}% OFF (${discounted_price_string})') 
 
     # Change Color for Total Price
     canvas.setFillColor(HexColor(PLAN2_TOTAL_PRICE_COLOR))
     # Total Price
-    canvas.drawString(PLAN2_TOTAL_PRICE_X, TOTAL_PRICE_Y, f'${round(subtotal_price-discount_price, 1)}') 
+    canvas.drawString(PLAN2_TOTAL_PRICE_X, TOTAL_PRICE_Y, f'${total_price_string}') 
         
 
 def writeServicesPlan3(canvas: Canvas, services: list, discount: int):
@@ -87,12 +110,19 @@ def writeServicesPlan3(canvas: Canvas, services: list, discount: int):
     canvas.setFillColor(HexColor(PLAN3_COLOR))
     y = SERVICE1_Y
 
-    for service in services[:6]: # Use slicing to make sure, only first 6 elements get displayed
+    for service in services:
+        if str(service[2]).isdigit() and int(service[2]) > 1:
+            service_title = f'{service[0]} ({service[2]}x)'
+            service_price = int(service[1]) * int(service[2])
+        else:
+            service_title = f'{service[0]}'
+            service_price = service[1]
+
         canvas.setFont("Montserrat-Regular", 10)
-        canvas.drawRightString(745, y,  f'${service[1]}') 
+        canvas.drawRightString(745, y,  f'${service_price}') 
         canvas.setFont("Montserrat-Bold", 9)
 
-        service_text = wrap(service[0], width=30, break_long_words=True)
+        service_text = wrap(service_title, width=30, break_long_words=True)
         for service_line in service_text:
             canvas.drawString(PLAN3_SERVICES_X, y, service_line)
             y -= 10
@@ -104,14 +134,19 @@ def writeServicesPlan3(canvas: Canvas, services: list, discount: int):
     # Discount Price
     subtotal_price = sum(prices)
     discount_price = (sum(prices) * discount) / 100
+    # String Formats
+    subtotal_price_string = '{:.2f}'.format(subtotal_price)
+    total_price_string = '{:.2f}'.format(subtotal_price-discount_price)
+    discounted_price_string = '{:.2f}'.format(discount_price)
+
     canvas.setFont("Montserrat-Black", 11)
-    canvas.drawString(PLAN3_SUBTOTAL_PRICE_X, SUBTOTAL_PRICE_Y, f'${round(subtotal_price, 2)}') 
-    canvas.drawString(PLAN3_DISCOUNT_PRICE_X, DISCOUNT_PRICE_Y, f'{discount}% OFF (${round(discount_price, 2)})') 
+    canvas.drawString(PLAN3_SUBTOTAL_PRICE_X, SUBTOTAL_PRICE_Y, f'${subtotal_price_string}') 
+    canvas.drawString(PLAN3_DISCOUNT_PRICE_X, DISCOUNT_PRICE_Y, f'{discount}% OFF (${discounted_price_string})') 
 
     # Change Color for Total Price    
     canvas.setFillColor(HexColor(PLAN3_TOTAL_PRICE_COLOR))
     # Total Price
-    canvas.drawString(PLAN3_TOTAL_PRICE_X, TOTAL_PRICE_Y,  f'${round(subtotal_price-discount_price, 1)}') 
+    canvas.drawString(PLAN3_TOTAL_PRICE_X, TOTAL_PRICE_Y,  f'${total_price_string}') 
         
 
 # Draw an image on the canvas

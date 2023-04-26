@@ -17,6 +17,7 @@
 # IMPORT PACKAGES AND MODULES
 # ///////////////////////////////////////////////////////////////
 from uis.windows.main_window.functions_main_window import *
+from setup_patients_ui import setup_patients
 from s3_bucket_url import get_url, get_latest_version
 from utils import messageBoxStyle
 from subprocess import Popen
@@ -32,6 +33,7 @@ import time
 myappid = 'tahiralauddin.regenixx.1.0.3' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
+from threading import Thread
 
 
 # IMPORT QT CORE
@@ -65,6 +67,7 @@ class MainWindow(QMainWindow):
     removeProgressBar = Signal()
     patientAddedToDatabaseSignal = Signal()
     downloadUpdatesSignal = Signal()
+    closed = False
 
     def __init__(self):
         super().__init__()
@@ -74,15 +77,12 @@ class MainWindow(QMainWindow):
         self.diagnosesLineEdits = []
         self.pdfCreateSignal.connect(self.showPDFCreatingProgressBar)
         self.pdfCreateShowProgressSignal.connect(self.updateProgressBar)
-        self.removeProgressBar.connect(self.hideProgressBar)
+        self.removeProgressBar.connect(self.handleRemoveProgressBar)
         self.patientAddedToDatabaseSignal.connect(self.refreshPatientsPage)
         self.downloadUpdatesSignal.connect(self.handleDownloadUpdatesSignal)
         
-
-        from threading import Thread
-
+        #! This block of code must run in each update, each version of the software
         thread = Thread(target=self.checkForUpdates)
-        # thread.daemon = True
         thread.start()
 
         # SETUP MAIN WINDOW
@@ -203,11 +203,13 @@ class MainWindow(QMainWindow):
     def updateProgressBar(self, message=None):
         self.splashScreen.progress(message)
 
-    def hideProgressBar(self):
+    def handleRemoveProgressBar(self):
         self.splashScreen.close()
+        self.splashScreen.ui.progressBar.setValue(0)
+        self.splashScreen.counter = 0
+        self.splashScreen.smoothCounter = 0
 
     def refreshPatientsPage(self):
-        from setup_patients_ui import setup_patients
         setup_patients(self)
 
     def remove_all_widgets(self, layout):
@@ -218,92 +220,101 @@ class MainWindow(QMainWindow):
             elif child.layout():
                 self.remove_all_widgets(child.layout())
 
-    def showPatientsDetail(self, patient):
-        # Remove previous labels 
+    def addServicesInPatientsPage(self, layout, discountLabel, services):
+        """ This function adds Dynamic details of a patient's Plan +to UI"""
+        discount = services['discount']
+        planSubtotal = 0
+        discountLabel.setText(str(discount)+'%')
+        for service, price, quantity in services['services']:
+            serviceTitle = f'{service}'
+            if str(quantity).isdigit() and int(quantity) > 1:
+                serviceTitle = f'{service} x ({quantity})'
+                price *= int(quantity)
+                
+            serviceLabel = QLabel(serviceTitle)
+            priceLabel = QLabel(f"$ {'{:.2f}'.format(price)}")
+            serviceLabel.setMinimumWidth(700)
+            # Service Title and Price should show horizontally
+            horizontalLayout = QHBoxLayout()
+            horizontalLayout.setContentsMargins(9,9,9,9)
+            horizontalLayout.addWidget(serviceLabel)
+            horizontalLayout.addWidget(priceLabel)
+            # Spacer
+            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+            horizontalLayout.addItem(spacer)
+            # Add all of the QWidgets to the main layout
+            layout.addLayout(horizontalLayout)
+            priceLabel.setAlignment(Qt.AlignRight)
+            planSubtotal += price
 
+        return planSubtotal, discount
+
+    def showPatientsDetail(self, patient):
+
+        # Remove previous labels 
         self.remove_all_widgets(self.ui.load_pages.plan1ServicesVerticalLayout)
         self.remove_all_widgets(self.ui.load_pages.plan2ServicesVerticalLayout)
         self.remove_all_widgets(self.ui.load_pages.plan3ServicesVerticalLayout)
-        
 
+
+        # Other Attributes
         self.ui.load_pages.pages.setCurrentIndex(3)
+        self.ui.load_pages.deletePatientButton.setObjectName(str(patient['id']))
         self.ui.load_pages.patientNameLabel.setText(patient['name'])
         self.ui.load_pages.patientDateOfBirth.setText(patient['date_of_birth'])
-        
         self.ui.load_pages.patientDateAddedLabel.setText(patient['date_added'])
-        icon = QIcon()
-        icon.addFile('gui/images/svg_icons/icon-clock.png')
+        
+        icon = QIcon('gui/images/svg_icons/icon-clock.png')
         self.ui.load_pages.patientDateAddedLabel.setIcon(icon)
 
+        icon = QIcon('gui/images/svg_icons/icon-delete.png')
+        self.ui.load_pages.deletePatientButton.setIcon(icon)
+
+
         services = patient['service_plans'][0]
-        discount = services['discount']
-        plan1Subtotal = 0
-        self.ui.load_pages.plan1Discount.setText(str(discount)+'%')
-        for service, price in services['services']:
-            serviceLabel = QLabel(service)
-            priceLabel = QLabel('$'+str(price))
-            serviceLabel.setMinimumWidth(700)
-            horizontalLayout = QHBoxLayout()
-            horizontalLayout.setContentsMargins(9,9,9,9)
-            horizontalLayout.addWidget(serviceLabel)
-            horizontalLayout.addWidget(priceLabel) #, 1, Qt.AlignRight)
-            # Spacer
-            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-            horizontalLayout.addItem(spacer)
-            self.ui.load_pages.plan1ServicesVerticalLayout.addLayout(horizontalLayout)
-            priceLabel.setAlignment(Qt.AlignRight)
-            plan1Subtotal += price
+        plan1Subtotal, plan1Discount = self.addServicesInPatientsPage(
+                            self.ui.load_pages.plan1ServicesVerticalLayout,
+                            self.ui.load_pages.plan1Discount, services)
 
         services = patient['service_plans'][1]
-        discount = services['discount']
-        plan2Subtotal = 0
-        self.ui.load_pages.plan2Discount.setText(str(discount)+'%')
-        for service, price in services['services']:
-            serviceLabel = QLabel(service)
-            priceLabel = QLabel('$'+str(price))
-            serviceLabel.setMinimumWidth(700)
-            horizontalLayout = QHBoxLayout()
-            horizontalLayout.setContentsMargins(9,9,9,9)
-            horizontalLayout.addWidget(serviceLabel)
-            horizontalLayout.addWidget(priceLabel) #, 1, Qt.AlignRight)
-            # Spacer
-            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-            horizontalLayout.addItem(spacer)
-            self.ui.load_pages.plan2ServicesVerticalLayout.addLayout(horizontalLayout)
-            priceLabel.setAlignment(Qt.AlignRight)
-            plan2Subtotal += price
+        plan2Subtotal, plan2Discount = self.addServicesInPatientsPage(
+                            self.ui.load_pages.plan2ServicesVerticalLayout,
+                            self.ui.load_pages.plan2Discount, services)
 
         services = patient['service_plans'][2]
-        discount = services['discount']
-        plan3Subtotal = 0
-        self.ui.load_pages.plan3Discount.setText(str(discount)+'%')
-        for service, price in services['services']:
-            serviceLabel = QLabel(service)
-            priceLabel = QLabel('$'+str(price))
-            serviceLabel.setMinimumWidth(700)
-            horizontalLayout = QHBoxLayout()
-            horizontalLayout.setContentsMargins(9,9,9,9)
-            horizontalLayout.addWidget(serviceLabel)
-            horizontalLayout.addWidget(priceLabel) #, 1, Qt.AlignRight)
-            # Spacer
-            spacer = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-            horizontalLayout.addItem(spacer)
-            self.ui.load_pages.plan3ServicesVerticalLayout.addLayout(horizontalLayout)
-            priceLabel.setAlignment(Qt.AlignRight)
-            plan3Subtotal += price
+        plan3Subtotal, plan3Discount = self.addServicesInPatientsPage(
+                            self.ui.load_pages.plan3ServicesVerticalLayout,
+                            self.ui.load_pages.plan3Discount, services)
 
+        # Subtotals for all plans
+        self.ui.load_pages.plan1SubtotalAmount.setText(f'$ {"{:.2f}".format(plan1Subtotal)}')
+        self.ui.load_pages.plan2SubtotalAmount.setText(f'$ {"{:.2f}".format(plan2Subtotal)}')
+        self.ui.load_pages.plan3SubtotalAmount.setText(f'$ {"{:.2f}".format(plan3Subtotal)}')
 
-        self.ui.load_pages.plan1SubtotalAmount.setText(f'$ {plan1Subtotal}')
-        self.ui.load_pages.plan2SubtotalAmount.setText(f'$ {plan2Subtotal}')
-        self.ui.load_pages.plan3SubtotalAmount.setText(f'$ {plan3Subtotal}')
+        # Discount Prices for all plans
+        self.ui.load_pages.plan1DiscountAmount.setText(f'$ {"{:.2f}".format(plan1Subtotal*plan1Discount/100)}')
+        self.ui.load_pages.plan2DiscountAmount.setText(f'$ {"{:.2f}".format(plan2Subtotal*plan2Discount/100)}')
+        self.ui.load_pages.plan3DiscountAmount.setText(f'$ {"{:.2f}".format(plan3Subtotal*plan3Discount/100)}')
 
-        self.ui.load_pages.plan1DiscountAmount.setText(f'$ {plan1Subtotal*discount/100}')
-        self.ui.load_pages.plan2DiscountAmount.setText(f'$ {plan2Subtotal*discount/100}')
-        self.ui.load_pages.plan3DiscountAmount.setText(f'$ {plan3Subtotal*discount/100}')
+        # Total prices for all plans
+        self.ui.load_pages.plan1TotalAmount.setText(f'$ {"{:.2f}".format(plan1Subtotal - (plan1Subtotal*plan1Discount/100))}')
+        self.ui.load_pages.plan2TotalAmount.setText(f'$ {"{:.2f}".format(plan2Subtotal - (plan2Subtotal*plan2Discount/100))}')
+        self.ui.load_pages.plan3TotalAmount.setText(f'$ {"{:.2f}".format(plan3Subtotal - (plan3Subtotal*plan3Discount/100))}')
 
-        self.ui.load_pages.plan1TotalAmount.setText(f'$ {plan1Subtotal - (plan1Subtotal*discount/100)}')
-        self.ui.load_pages.plan2TotalAmount.setText(f'$ {plan2Subtotal - (plan2Subtotal*discount/100)}')
-        self.ui.load_pages.plan3TotalAmount.setText(f'$ {plan3Subtotal - (plan3Subtotal*discount/100)}')
+        
+    def deletePatient(self):
+        icon = QIcon('gui/images/svg_icons/icon-delete-pressed.png')
+        self.ui.load_pages.deletePatientButton.setIcon(icon)
+        button_chosen = self.showQMessageBox('Confirm Deletion', 'Are you sure you want to delete the patient record?',
+                             [QMessageBox.Yes, QMessageBox.No])
+        if button_chosen == QMessageBox.No:
+            icon = QIcon('gui/images/svg_icons/icon-delete.png')
+            self.ui.load_pages.deletePatientButton.setIcon(icon)
+            return
+
+        self.ui.load_pages.goBackToPatientstPageButton.click()
+        Database.delete_patient(int(self.ui.load_pages.deletePatientButton.objectName()))
+        setup_patients(self)
 
 
     def goBackToPatientsPage(self):
@@ -311,40 +322,62 @@ class MainWindow(QMainWindow):
 
 
     def checkForUpdates(self):
+        with open('version.json', 'r') as f:
+            version_data = json.load(f)
+        local_version = version_data["version"]
         while True:
-            latest_version = get_latest_version().strip('.zip').strip('regenixx-')
+            latest_version = get_latest_version(local_version).strip('.zip').strip('regenixx-')
             # Check if the local version matches the latest version
-            with open('version.json', 'r') as f:
-                version_data = json.load(f)
-            local_version = version_data["version"]
 
             if local_version != latest_version:
                 # Get user's input, whether they want to update the software or not
                 self.downloadUpdatesSignal.emit()
                 break
-                    
-            time.sleep(5)
+
+            if self.closed:
+                break
+                
+            # Check for new updates every 10 seconds
+            time.sleep(10)
+
+    def closeEvent(self, event):
+        self.closed = True
+        event.accept()
+
 
     def showUpdateAvaiableWindow(self):
-        messageBox = QMessageBox()
-        messageBox.setWindowTitle("Update Available")
-        messageBox.setText("New Update is available. Do you want to download new updates?")
+        # Get the user selection
+        button_chosen = self.showQMessageBox(window_title="Update Available", 
+                            text="New Update is available. Do you want to download new updates?",
+                            buttons=[QMessageBox.Yes, QMessageBox.No])
+        # If user pressed no, return False
+        if button_chosen == QMessageBox.No:
+            return False
+        # If user pressed yes, return True
+        elif button_chosen == QMessageBox.Yes:
+            # Dead end, close the GUI and download updates
+            return True
+        
+    def showQMessageBox(self, window_title=None, text=None, buttons=None):
+        if not text:
+            text = "Update Installed successfully! You may close the window now."
+        if not window_title:
+            window_title = "Updated Success!"
+        if not buttons:
+            buttons = [QMessageBox.Ok]
+
+        messageBox = QMessageBox(self)
+        messageBox.setWindowTitle(window_title)
+        messageBox.setText(text)
         messageBox.setIcon(QMessageBox.Information)
         # Add some custom styles to the QMessageBox
         messageBox.setStyleSheet(messageBoxStyle)
         
         # Add a button to the QMessageBox and show it
-        messageBox.addButton(QMessageBox.Yes)
-        messageBox.addButton(QMessageBox.No)
+        for button in buttons:
+            messageBox.addButton(button)
 
-        button_chosen = messageBox.exec()
-
-        if button_chosen == QMessageBox.No:
-            messageBox.close()
-            return False
-        elif button_chosen == QMessageBox.Yes:
-            # Dead end
-            return True
+        return messageBox.exec()
 
 
     def download_updates(self):
@@ -362,6 +395,8 @@ class MainWindow(QMainWindow):
         downloadUpdates = self.showUpdateAvaiableWindow()
         if downloadUpdates:
             self.download_updates()
+
+            
             
 
 def main():

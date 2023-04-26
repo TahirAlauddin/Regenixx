@@ -83,17 +83,21 @@ class TableWidgetDragRows(PyTableWidget):
                 rows = pickle.loads(stream.readBytes(0))
                 old_row_count = self.rowCount()
                 self.setRowCount(old_row_count + len(rows))
-                self.setColumnCount(2) #! Hardcoding column count
+                self.setColumnCount(3) #! Hardcoding column count
 
                 sender = event.source()
-                self.setHorizontalHeaderLabels(['Title', 'Cost'])
+                self.setHorizontalHeaderLabels(['Title', 'Cost', 'Quantity'])
 
                 for row_idx, row in enumerate(rows):
                     column = self.columnCount()
-                    row = row[1:3]
+                    if len(row) == 4:
+                        row = row[1:3] + ['1']
                     for column_idx, column in enumerate(row):
                         item = QTableWidgetItem(column)
                         self.setItem(row_idx+old_row_count, column_idx, item)
+                    item = QTableWidgetItem(column)
+                    self.setItem(row_idx+old_row_count, column_idx, item)
+                        
             event.accept()
         else:
             event.ignore()

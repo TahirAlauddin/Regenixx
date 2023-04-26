@@ -250,8 +250,9 @@ class SetupMainWindow:
             scroll_bar_btn_color = self.themes["app_color"]["dark_four"],
             context_color = self.themes["app_color"]["context_color"]
         )
-        self.goodTable.setColumnCount(2) #! Explicitly defining number of columns, may cause problem later
-        self.goodTable.setHorizontalHeaderLabels(['Title', 'Cost',])
+        self.goodTable.setColumnCount(3) #! Explicitly defining number of columns, may cause problem later
+        self.goodTable.setHorizontalHeaderLabels(['Title', 'Cost', 'Quantity',])
+        self.goodTable.setObjectName("GoodTable")
         header = self.goodTable.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
@@ -283,8 +284,9 @@ class SetupMainWindow:
             scroll_bar_btn_color = self.themes["app_color"]["dark_four"],
             context_color = self.themes["app_color"]["context_color"]
         )
-        self.betterTable.setColumnCount(2) #! Explicitly defining number of columns, may cause problem later
-        self.betterTable.setHorizontalHeaderLabels(['Title', 'Cost',])
+        self.betterTable.setColumnCount(3) #! Explicitly defining number of columns, may cause problem later
+        self.betterTable.setHorizontalHeaderLabels(['Title', 'Cost', 'Quantity',])
+        self.betterTable.setObjectName("BetterTable")
         header = self.betterTable.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
@@ -317,8 +319,9 @@ class SetupMainWindow:
             scroll_bar_btn_color = self.themes["app_color"]["dark_four"],
             context_color = self.themes["app_color"]["context_color"]
         )
-        self.bestTable.setColumnCount(2) #! Explicitly defining number of columns, may cause problem later
-        self.bestTable.setHorizontalHeaderLabels(['Title', 'Cost',])
+        self.bestTable.setColumnCount(3) #! Explicitly defining number of columns, may cause problem later
+        self.bestTable.setHorizontalHeaderLabels(['Title', 'Cost', 'Quantity',])
+        self.bestTable.setObjectName("BestTable")
         header = self.bestTable.horizontalHeader()
         header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
@@ -488,7 +491,7 @@ class SetupMainWindow:
                 bg_color = self.themes["app_color"]["dark_one"],
                 bg_color_active = self.themes["app_color"]["dark_three"],
                 context_color = self.themes["app_color"]["context_color"],
-                items=MainFunctions.get_diagnosis_from_db()
+                items=Database.get_diagnosis_from_db()
             )
             self.diagnosisLayout.addWidget(diagnosisLineEdit)
             self.diagnosesLineEdits.append(diagnosisLineEdit)
@@ -565,18 +568,6 @@ class SetupMainWindow:
         self.imagesFrameLayout.setColumnStretch(2, 1)
         self.imagesFrame.setLayout(self.imagesFrameLayout)
 
-       
-        def selectImage(self, label):
-            file, _ = QFileDialog.getOpenFileName(self, 'Pdf Images', '.', 'Images (*.jpg;*.png;*jpeg)' )
-            if file:
-                MainFunctions.setImageForPixmap(label, 350, 280, file)
-
-            if label == self.image1LabelPixmap:
-                self.image_plan1 = file
-            elif label == self.image2LabelPixmap:
-                self.image_plan2 = file
-            elif label == self.image3LabelPixmap:
-                self.image_plan3 = file
 
         self.image1LabelPixmap = QLabel()
         self.image1Label = QLabel()
@@ -584,8 +575,7 @@ class SetupMainWindow:
         self.image1LabelPixmap.setPixmap(QPixmap(Functions.set_svg_icon('icon-image-file-add')))
         self.imagesFrameLayout.addWidget(self.image1LabelPixmap, 0, 0, Qt.AlignHCenter)
         self.imagesFrameLayout.addWidget(self.image1Label, 1, 0, Qt.AlignHCenter)
-        self.image1LabelPixmap.mousePressEvent = lambda x: selectImage(self, self.image1LabelPixmap)
-
+        self.image1LabelPixmap.mousePressEvent = lambda x: MainFunctions.selectImage(self, self.image1LabelPixmap)
 
         self.image2LabelPixmap = QLabel()
         self.image2Label = QLabel()
@@ -593,7 +583,7 @@ class SetupMainWindow:
         self.image2LabelPixmap.setPixmap(QPixmap(Functions.set_svg_icon('icon-image-file-add')))
         self.imagesFrameLayout.addWidget(self.image2LabelPixmap, 0, 1, Qt.AlignHCenter)
         self.imagesFrameLayout.addWidget(self.image2Label, 1, 1, Qt.AlignHCenter)
-        self.image2LabelPixmap.mousePressEvent = lambda x: selectImage(self, self.image2LabelPixmap)
+        self.image2LabelPixmap.mousePressEvent = lambda x: MainFunctions.selectImage(self, self.image2LabelPixmap)
 
 
         self.image3LabelPixmap = QLabel()
@@ -602,7 +592,7 @@ class SetupMainWindow:
         self.image3LabelPixmap.setPixmap(QPixmap(Functions.set_svg_icon('icon-image-file-add')))
         self.imagesFrameLayout.addWidget(self.image3LabelPixmap, 0, 2, Qt.AlignHCenter)
         self.imagesFrameLayout.addWidget(self.image3Label, 1, 2, Qt.AlignHCenter)
-        self.image3LabelPixmap.mousePressEvent = lambda x: selectImage(self, self.image3LabelPixmap)
+        self.image3LabelPixmap.mousePressEvent = lambda x: MainFunctions.selectImage(self, self.image3LabelPixmap)
 
         # DateEdit
         self.patientsDateOfBirth = QDateEdit()
@@ -625,10 +615,9 @@ class SetupMainWindow:
 
 
         mainTableHeader = self.mainTable.horizontalHeader()
-        mainTableHeader.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        mainTableHeader.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         mainTableHeader.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         mainTableHeader.setSectionResizeMode(2, QHeaderView.ResizeMode.ResizeToContents)
-        mainTableHeader.setSectionResizeMode(3, QHeaderView.ResizeMode.Stretch)
 
         for idx, service in enumerate(services):
             self.mainTable.setItem(idx, 0, QTableWidgetItem(service[0]))
@@ -648,6 +637,7 @@ class SetupMainWindow:
         self.createPDFBtn.setMinimumSize(QSize(150,50))
         self.createPDFBtn.setMaximumWidth(200)
         self.createPDFBtn.clicked.connect(lambda x: MainFunctions.createPDF(self))
+        self.createPDFBtn.setShortcut('Ctrl+D')
 
         # ADD WIDGETS
         SetupMainWindow.addWidgetToWindow(self)
@@ -671,13 +661,24 @@ class SetupMainWindow:
         self.ui.right_column.verticalLayout.addWidget(self.changeExcelFileButton, 1, Qt.AlignBottom)
 
 
-
         from setup_patients_ui import setup_patients
         setup_patients(self)
 
+        # Mouse Click event
+        self.ui.load_pages.deletePatientButton.clicked.connect(self.deletePatient)
+        
+        
+        SetupMainWindow.setShortcuts(self)
         #//////////////////////////////////////////////////////////////////////////////////
         # UI SETUP END
 
+    def setShortcuts(self):
+        uploadImage1 = QShortcut(QKeySequence('Ctrl+1'), self)  # Create a QShortcut object with the hotkey Ctrl+1
+        uploadImage2 = QShortcut(QKeySequence('Ctrl+2'), self)  # Create a QShortcut object with the hotkey Ctrl+2
+        uploadImage3 = QShortcut(QKeySequence('Ctrl+3'), self)  # Create a QShortcut object with the hotkey Ctrl+3
+        uploadImage1.activated.connect(lambda: MainFunctions.selectImage(self, self.image1LabelPixmap)) 
+        uploadImage2.activated.connect(lambda: MainFunctions.selectImage(self, self.image2LabelPixmap)) 
+        uploadImage3.activated.connect(lambda: MainFunctions.selectImage(self, self.image3LabelPixmap)) 
 
     
     def removeCustomWidgetFromWindow(self):
@@ -799,8 +800,12 @@ class SetupMainWindow:
                 id = self.ui.load_pages.tableWidget.cellWidget(row, 0).text()
                 diagnosis = self.ui.load_pages.tableWidget.cellWidget(row, 1).text()
                 diagnoses.append([id, diagnosis])
-            print(diagnoses)
-            MainFunctions.update_diagnoses_in_db(diagnoses)
+            successfully_saved = Database.update_diagnoses_in_db(diagnoses)
+            if successfully_saved:
+                QMessageBox.information(self, "Successfully Saved", f"Diagnoses are successfully updated in the database.")
+            else:
+                QMessageBox.critical(self, "Database Error", f"An error occured while trying to saving Diagnoses to Database. For more information check db.error.log file.")
+                
 
         self.icon = QIcon(Functions.set_svg_icon("icon-plus-yellow.png"))
         self.ui.load_pages.addRowDiagnosisBtn.setIcon(self.icon)
@@ -814,12 +819,13 @@ class SetupMainWindow:
 
         self.ui.load_pages.tableWidget.setColumnCount(2)
         self.ui.load_pages.saveDiagnosisBtn.clicked.connect(saveDiagnosis)
+        self.ui.load_pages.saveDiagnosisBtn.setShortcut('Ctrl+S')
 
         # ///////////////////////////////////////////////////////////////
         # END - EXAMPLE CUSTOM WIDGETS
         # ///////////////////////////////////////////////////////////////
 
-        diagnoses = MainFunctions.list_diagnosis_from_db()
+        diagnoses = Database.list_diagnosis_from_db()
 
         if not diagnoses:
             diagnoses = []

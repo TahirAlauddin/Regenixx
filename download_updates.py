@@ -123,7 +123,7 @@ class DownloadWindow(QMainWindow):
         if progress == 100:
             if self.downloaded:
                 # Close window, installation successful                
-                result = self.showSuccessfullyUpdatedInfoMessage()
+                result = self.showQMessageBox()
                 if result == QMessageBox.Ok:
                     self.close()
                 return
@@ -136,7 +136,7 @@ class DownloadWindow(QMainWindow):
             self.installation_thread.start()
 
 
-    def showSuccessfullyUpdatedInfoMessage(self, window_title=None, text=None, buttons=None):
+    def showQMessageBox(self, window_title=None, text=None, buttons=None):
         if not text:
             text = "Update Installed successfully! You may close the window now."
         if not window_title:
@@ -161,7 +161,7 @@ class DownloadWindow(QMainWindow):
     def cancel_download(self):
         # Cancel the download in the download thread
         if hasattr(self, 'download_thread'):
-            messageBox = self.showSuccessfullyUpdatedInfoMessage("Confirmation", "Are you sure you want to cancel this operation?", 
+            messageBox = self.showQMessageBox("Confirmation", "Are you sure you want to cancel this operation?", 
                                                     [QMessageBox.Yes, QMessageBox.No])
             if messageBox == QMessageBox.Yes:
                 self.download_thread.cancel()

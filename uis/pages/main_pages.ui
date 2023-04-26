@@ -59,7 +59,7 @@ border: none;
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>65</width>
+            <width>98</width>
             <height>64</height>
            </rect>
           </property>
@@ -273,6 +273,35 @@ margin-left: 10px;</string>
                 <property name="icon">
                  <iconset>
                   <normaloff>../../../../../../Downloads/icons8-clock-32.png</normaloff>../../../../../../Downloads/icons8-clock-32.png</iconset>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="deletePatientButton">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="cursor">
+                 <cursorShape>PointingHandCursor</cursorShape>
+                </property>
+                <property name="layoutDirection">
+                 <enum>Qt::LeftToRight</enum>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <normaloff>../../gui/images/svg_icons/icon-delete.png</normaloff>../../gui/images/svg_icons/icon-delete.png</iconset>
+                </property>
+                <property name="iconSize">
+                 <size>
+                  <width>35</width>
+                  <height>35</height>
+                 </size>
                 </property>
                </widget>
               </item>

@@ -22,7 +22,7 @@ def get_url():
     return presigned_url
 
 
-def get_latest_version():
+def get_latest_version(local_version=None):
 
     # Create an S3 client
     s3 = boto3.client('s3', region_name='us-east-2', aws_access_key_id=AWS_ACCESS_KEY, aws_secret_access_key=AWS_SECRET_KEY)
@@ -35,9 +35,12 @@ def get_latest_version():
     response = s3.list_objects(Bucket=bucket_name, Prefix=key_prefix)
 
     # Filter the objects to find the software files
-    software_files = [obj['Key'] for obj in response['Contents'] if obj['Key'].startswith(key_prefix) and obj['Key'].endswith('.zip')]
+    software_files = [obj['Key'] for obj in response.get('Contents', []) if obj['Key'].startswith(key_prefix) and obj['Key'].endswith('.zip')]
 
     # Get the latest version of the software
+    if not software_files:
+        return local_version
+    
     latest_version = max(software_files, key=lambda f: tuple(map(int, re.search(r'(\d+)\.(\d+)\.(\d+)\.zip', f).groups())))
 
     return latest_version

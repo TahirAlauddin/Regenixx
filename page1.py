@@ -34,7 +34,6 @@ def writePage1(canvas: Canvas, patients_name: str, patients_date_of_birth: str,
 
 
 
-
 def main():
     diagnosis = "This line is taking significantly more space than the space. The PDF can't show all this text. More or less, it could fill in an entire paragraph without issue."
     patients_name = "John Doe"

@@ -1,5 +1,26 @@
 from page1 import *
 from page2 import *
+import os
+import time
+
+
+def get_available_filename(filename):
+    """
+    Check if the given filename exists in the current directory.
+    If it exists, append a number to the filename until an available filename is found.
+    """
+    # Check if the original filename exists
+    if not os.path.exists(filename):
+        return filename
+
+    # If the original filename exists, find an available filename
+    base, ext = os.path.splitext(filename)
+    i = 1
+    while True:
+        new_filename = f"{base} ({i}){ext}"
+        if not os.path.exists(new_filename):
+            return new_filename
+        i += 1
 
 
 def generatePDF(patients_name: str, patients_date_of_birth: str, diagnosis: str,
@@ -22,7 +43,7 @@ def generatePDF(patients_name: str, patients_date_of_birth: str, diagnosis: str,
 
     if signal:
         signal.emit('DRAWING IMAGES')
-
+    
     writePage2(canvas2, image_plan1, image_plan2, image_plan3, 
                services_plan1, services_plan2, services_plan3, 
                discount_plan1, discount_plan2, discount_plan3)
@@ -55,6 +76,8 @@ def generatePDF(patients_name: str, patients_date_of_birth: str, diagnosis: str,
     #move to the beginning of the StringIO buffer
     packet1.seek(0)
     packet2.seek(0)
+
+    output_pdf_path = get_available_filename(output_pdf_path)
     
     # finally, write "output" to a real file
     output_stream = open(output_pdf_path, "wb")
@@ -64,11 +87,8 @@ def generatePDF(patients_name: str, patients_date_of_birth: str, diagnosis: str,
 
     if signal:
         signal.emit('DONE! THANKS FOR WAITING 😀')
-
-        import time
         time.sleep(1)
         signal.emit('')
-
 
 
 if __name__ == '__main__':

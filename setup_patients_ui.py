@@ -1,8 +1,7 @@
 from qt_core import *
 from utils import *
 from core.json_themes import Themes
-from uis.windows.main_window.functions_main_window import MainFunctions, Functions
-
+from uis.windows.main_window.functions_main_window import Functions, Database
 
 def setup_patients(self):
         
@@ -100,8 +99,8 @@ f"color: {themes['app_color']['context_color']};\n"
 
 
         # Patients
-        patients = MainFunctions.get_patients()
-        
+        patients = Database.get_patients()
+
         for idx, patient in enumerate(patients):
 
                 self.patient_name = QtWidgets.QLabel(self.scrollAreaWidgetContents_3)
@@ -158,3 +157,5 @@ f"color: {themes['app_color']['context_color']};\n"
         icon = QIcon()
         icon.addFile(Functions.set_svg_icon('icon_arrow_left.svg'))
         self.ui.load_pages.goBackToPatientstPageButton.setIcon(icon)
+
+        
