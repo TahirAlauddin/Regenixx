@@ -1,14 +1,21 @@
 {
-  
-  "version": "1.0.5",
+  "version": "1.0.6",
   "changes": [
-    "PDF Total Price spacing issue resolved",
-    "PDF Total and Subtotal calculation bug fixed"
+    "Services from Excel file with prices in float number being ignored issue resolved",
+    "Update pop up appearing when the versions didn't match issue resolved"
   ],
-  "release_date": "2023-04-26",
+  "release_date": "2023-06-01",
   "author": "Tahir Alauddin",
   "description": "Regenixx is a software for a medical office. It is used for creating personalized printable pdfs for the patients with different pricing and plans.",
   "changelog": [
+    {
+    "version": "1.0.5",
+    "changes": [
+      "PDF Total Price spacing issue resolved",
+      "PDF Total and Subtotal calculation bug fixed"
+    ],
+    "release_date": "2023-04-26"
+    },
     {
       "version": "1.0.4",
       "changes": [

@@ -328,7 +328,7 @@ class MainWindow(QMainWindow):
             latest_version = get_latest_version(local_version).strip('.zip').strip('regenixx-')
             # Check if the local version matches the latest version
 
-            if local_version != latest_version:
+            if local_version <= latest_version:
                 # Get user's input, whether they want to update the software or not
                 self.downloadUpdatesSignal.emit()
                 break

@@ -306,6 +306,13 @@ class MainFunctions():
         desktop_path = winreg.QueryValueEx(key, "Desktop")[0]
 
         return desktop_path
+    
+    def is_float_or_int(value):
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
 
     
     def get_services_from_excel(window):
@@ -336,7 +343,7 @@ class MainFunctions():
                     str(row[2]),
                     str(row[3]),
                 ]
-                if str(row[2]).isdigit():
+                if row[2] and MainFunctions.is_float_or_int(row[2]):
                     data.append(row_data)
             except IndexError:
                 if len(data) < 1:
