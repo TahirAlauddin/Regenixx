@@ -1,7 +1,7 @@
 # ///////////////////////////////////////////////////////////////
 #
 # PROJECT MADE WITH: Qt Designer and PySide6
-# V: 1.0.5
+# V: 1.0.7
 #
 # This project can be used freely for all uses, as long as they maintain the
 # respective credits only in the Python scripts, any information in the visual
@@ -29,7 +29,7 @@ import ctypes
 import json
 import time
 
-myappid = 'tahiralauddin.regenixx.1.0.5' # arbitrary string
+myappid = 'tahiralauddin.regenixx.1.0.7' # arbitrary string
 ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
 from threading import Thread
@@ -327,8 +327,7 @@ class MainWindow(QMainWindow):
         while True:
             latest_version = get_latest_version(local_version).strip('.zip').strip('regenixx-')
             # Check if the local version matches the latest version
-
-            if local_version <= latest_version:
+            if local_version < latest_version:
                 # Get user's input, whether they want to update the software or not
                 self.downloadUpdatesSignal.emit()
                 break

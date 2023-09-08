@@ -7,7 +7,6 @@ load_dotenv()
 AWS_SECRET_KEY = os.getenv('AWS_SECRET_KEY')
 AWS_ACCESS_KEY = os.getenv('AWS_ACCESS_KEY')
 
-
 def get_url():
     
     latest_version = get_latest_version() 

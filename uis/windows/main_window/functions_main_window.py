@@ -157,6 +157,7 @@ class MainFunctions():
         tableWidget.setItem(rowCount + 1, 1, QTableWidgetItem())
         tableWidget.setItem(rowCount + 1, 2, QTableWidgetItem())
         tableWidget.setItem(rowCount + 1, 3, QTableWidgetItem())
+      
         
     def removeRow(tableWidget: QTableWidget):
         tableWidget.removeRow(tableWidget.currentRow())

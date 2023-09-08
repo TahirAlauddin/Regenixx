@@ -1,13 +1,19 @@
 {
-  "version": "1.0.6",
+  "version": "1.0.7",
   "changes": [
-    "Services from Excel file with prices in float number being ignored issue resolved",
     "Update pop up appearing when the versions didn't match issue resolved"
   ],
-  "release_date": "2023-06-01",
+  "release_date": "2023-06-03",
   "author": "Tahir Alauddin",
   "description": "Regenixx is a software for a medical office. It is used for creating personalized printable pdfs for the patients with different pricing and plans.",
   "changelog": [
+    {
+    "version": "1.0.6",
+    "changes": [
+      "Services from Excel file with prices in float number being ignored issue resolved"
+    ],
+    "release_date": "2023-06-01"
+    },
     {
     "version": "1.0.5",
     "changes": [
